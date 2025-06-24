@@ -7,10 +7,28 @@
 
     <title>Phaser 3 Tilemap Template</title>
 
-    <!-- Import Phaser 3 from CDN -->
+    <!-- Evitar scrollbars y aplicar estilo retro -->
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: rgb(255, 255, 255);
+        height: 100%;
+        width: 100%;
+      }
+
+      canvas {
+        display: block;
+        margin: auto;
+        image-rendering: pixelated;
+      }
+    </style>
+
+    <!-- Import Phaser 3 desde CDN -->
     <script src="//cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
 
-    <!-- Import an run main.js : load the game config and start first scene -->
+    <!-- Cargar y ejecutar el juego -->
     <script type="module" src="./main.js"></script>
   </head>
   <body></body>
