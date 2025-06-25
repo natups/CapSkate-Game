@@ -5,15 +5,14 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>Phaser 3 Tilemap Template</title>
+    <title>Cap Skate</title>
 
-    <!-- Evitar scrollbars y aplicar estilo retro -->
     <style>
       html, body {
         margin: 0;
         padding: 0;
         overflow: hidden;
-        background: rgb(255, 255, 255);
+        background: #000;
         height: 100%;
         width: 100%;
       }
@@ -25,11 +24,19 @@
       }
     </style>
 
-    <!-- Import Phaser 3 desde CDN -->
     <script src="//cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
-
-    <!-- Cargar y ejecutar el juego -->
     <script type="module" src="./main.js"></script>
+
+    <style>
+    @font-face {
+      font-family: 'PressStart2P';
+      src: url('public/assets/fonts/PressStart2P.ttf') format('truetype');
+    }
+
+    body {
+      font-family: 'PressStart2P', monospace;
+    }
+  </style>
   </head>
   <body></body>
 </html>

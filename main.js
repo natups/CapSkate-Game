@@ -1,12 +1,12 @@
-import Game from "./scenes/Game.js";
+import mainMenu from "./scenes/MainMenu.js";
+import game from "./scenes/game.js";
 
-// Crear configuración de Phaser
 const config = {
   type: Phaser.AUTO,
-  width: 320, // Resolución base tipo Sega Genesis
+  width: 320,
   height: 240,
-  pixelArt: true, // Para mantener los píxeles nítidos
-  roundPixels: true, // Redondear los píxeles para evitar desenfoque
+  pixelArt: true,
+  roundPixels: true,
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -16,11 +16,17 @@ const config = {
   physics: {
     default: "arcade",
     arcade: {
-      gravity: { y: 980 }, // Gravedad tipo terrestre en píxeles por segundo cuadrado
+      gravity: { y: 980 },
       debug: false,
     },
   },
-  scene: [Game],
+  render:{
+    pixelArt: true,
+    antialias: false,
+    roundPixels: true
+  },
+  scene: [mainMenu, game],
 };
 
 window.game = new Phaser.Game(config);
+
