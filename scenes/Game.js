@@ -14,67 +14,71 @@ export default class game extends Phaser.Scene {
     this.load.tilemapTiledJSON('plataformas', 'public/assets/tilemap/plataformas.json');
   }
 
-create() {
-  // cielo y nubes con parallax
-  this.cielo = this.add.image(0, 0, 'cielo').setOrigin(0);
-  this.nubesA = this.add.image(0, 5, 'nubes').setOrigin(0);
-  this.nubesB = this.add.image(this.nubesA.width, 5, 'nubes').setOrigin(0);
-  this.nubes2A = this.add.image(0, 5, 'nubes2').setOrigin(0);
-  this.nubes2B = this.add.image(this.nubes2A.width, 5, 'nubes2').setOrigin(0);
+  create() {
+    // cielo y nubes con parallax
+    this.cielo = this.add.tileSprite(0, 0, 320, 240, 'cielo').setOrigin(0).setScrollFactor(0);
+    this.nubesA = this.add.tileSprite(0, 5, 320, 240, 'nubes').setOrigin(0).setScrollFactor(0);
+    this.nubes2A = this.add.tileSprite(0, 5, 320, 240, 'nubes2').setOrigin(0).setScrollFactor(0);
 
-  ['cielo', 'nubes', 'nubes2'].forEach(key =>
-    this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST)
-  );
+    ['cielo', 'nubes', 'nubes2'].forEach(key =>
+      this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST)
+    );
 
-  // cargar mapa y capa
-  const map = this.make.tilemap({ key: 'plataformas' });
-  const tileset = map.addTilesetImage('plataformas', 'plataformas');
-  const layer = map.createLayer('plataformas', tileset, 0, 0);
+    // cargar mapa y capa
+    const map = this.make.tilemap({ key: 'plataformas' });
+    const tileset = map.addTilesetImage('plataformas', 'plataformas');
+    const layer = map.createLayer('plataformas', tileset, 0, 0);
 
-  // agregar colisión a los tiles
-  layer.setCollisionByProperty({ colision: true });
+    // agregar colisión a los tiles
+    layer.setCollisionByProperty({ colision: true });
 
-  // ajustar el tamaño del mundo al tamaño del mapa
-  this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+    // ajustar el tamaño del mundo al tamaño del mapa
+    this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+    this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
-  // crear jugador
-  const objetoJugador = map.getObjectLayer("jugador").objects[0];
-  this.jugador = this.physics.add.sprite(objetoJugador.x, objetoJugador.y, 'jugador');
-  this.jugador.setOrigin(0.5, 1);
+    // crear jugador
+    const objetoJugador = map.getObjectLayer("jugador").objects[0];
+    this.jugador = this.physics.add.sprite(objetoJugador.x, objetoJugador.y, 'jugador');
+    this.jugador.setOrigin(0.5, 1);
 
-  // limita al jugador dentro del mundo
-  this.jugador.setCollideWorldBounds(true);
+    // movimiento jugador (velocidad constante hacia la derecha)
+    this.jugador.setVelocityX(120);
 
-  // colision con las plataformas
-  this.physics.add.collider(this.jugador, layer);
-}
+    // entrada del teclado para salto
+    this.saltos = 0; // para permitir doble salto
+    this.teclaEspacio = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
+    // limita al jugador dentro del mundo
+    this.jugador.setCollideWorldBounds(true);
+
+    // colision con las plataformas
+    this.physics.add.collider(this.jugador, layer);
+
+    // la cámara sigue al jugador
+    this.cameras.main.startFollow(this.jugador, true, 1, 1);
+
+    // guardamos el tilemap para usar scrollX en update
+    this.layer = layer;
+  }
 
   update() {
-    const speed1 = 0.3;
-    const speed2 = 0.15;
+    const scrollX = this.cameras.main.scrollX;
 
-    // Mover nubes 1
-    this.nubesA.x -= speed1;
-    this.nubesB.x -= speed1;
+    // Parallax del fondo
+    this.nubesA.tilePositionX = scrollX * 0.5;
+    this.nubes2A.tilePositionX = scrollX * 0.3;
+    this.cielo.tilePositionX = scrollX * 0.2;
 
-    // Si se va completamente una nube, la reposicionamos a la derecha de la otra
-    if (this.nubesA.x <= -this.nubesA.width) {
-      this.nubesA.x = this.nubesB.x + this.nubesB.width;
-    }
-    if (this.nubesB.x <= -this.nubesB.width) {
-      this.nubesB.x = this.nubesA.x + this.nubesA.width;
+    // saltos !! --> resetear saltos si el jugador toca el suelo
+    if (this.jugador.body.blocked.down) {
+      this.saltos = 0;
     }
 
-    // Nubes 2 (más lentas)
-    this.nubes2A.x -= speed2;
-    this.nubes2B.x -= speed2;
+    // salto o doble salto
+    if (Phaser.Input.Keyboard.JustDown(this.teclaEspacio) && this.saltos < 2) {
+      this.jugador.setVelocityY(-300);
+      this.saltos++;
+    }
 
-    if (this.nubes2A.x <= -this.nubes2A.width) {
-      this.nubes2A.x = this.nubes2B.x + this.nubes2B.width;
-    }
-    if (this.nubes2B.x <= -this.nubes2B.width) {
-      this.nubes2B.x = this.nubes2A.x + this.nubes2A.width;
-    }
   }
 }
