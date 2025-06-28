@@ -51,7 +51,7 @@ export default class mainMenu extends Phaser.Scene {
     // Tecla ENTER para iniciar el juego
     this.enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
     this.enterKey.on("down", () => {
-      this.scene.start("nivel1"); // Cambiá esto si el nombre de tu escena es otro
+      this.scene.start("game");
     });
   }
 
