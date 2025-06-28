@@ -42,7 +42,7 @@ export default class mainMenu extends Phaser.Scene {
 
     // Texto de récord
     const recordGuardado = localStorage.getItem("recordTiempo") || "0.00";
-    this.textoRecord = this.add.text(5, 225, "Record: " + recordGuardado, {
+    this.textoRecord = this.add.text(5, 225, "HI-Score: " + recordGuardado, {
       fontFamily: "PressStart2P",
       fontSize: "8px",
       color: "#ffffff",

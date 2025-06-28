@@ -4,6 +4,8 @@ export default class game extends Phaser.Scene {
   }
 
   preload() {
+    this.load.image('jugador', 'public/assets/jugador1.png');
+
     this.load.image('cielo', 'public/assets/fondos/cielo.png');
     this.load.image('nubes', 'public/assets/fondos/nubes.png');
     this.load.image('nubes2', 'public/assets/fondos/nubes2.png');
@@ -12,27 +14,41 @@ export default class game extends Phaser.Scene {
     this.load.tilemapTiledJSON('plataformas', 'public/assets/tilemap/plataformas.json');
   }
 
-  create() {
-    // Fondo cielo (estático)
-    this.cielo = this.add.image(0, 0, 'cielo').setOrigin(0);
+create() {
+  // cielo y nubes con parallax
+  this.cielo = this.add.image(0, 0, 'cielo').setOrigin(0);
+  this.nubesA = this.add.image(0, 5, 'nubes').setOrigin(0);
+  this.nubesB = this.add.image(this.nubesA.width, 5, 'nubes').setOrigin(0);
+  this.nubes2A = this.add.image(0, 5, 'nubes2').setOrigin(0);
+  this.nubes2B = this.add.image(this.nubes2A.width, 5, 'nubes2').setOrigin(0);
 
-    // NUBES: duplicamos cada capa para bucle
-    this.nubesA = this.add.image(0, 5, 'nubes').setOrigin(0);
-    this.nubesB = this.add.image(this.nubesA.width, 5, 'nubes').setOrigin(0);
+  ['cielo', 'nubes', 'nubes2'].forEach(key =>
+    this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST)
+  );
 
-    this.nubes2A = this.add.image(0, 5, 'nubes2').setOrigin(0);
-    this.nubes2B = this.add.image(this.nubes2A.width, 5, 'nubes2').setOrigin(0);
+  // cargar mapa y capa
+  const map = this.make.tilemap({ key: 'plataformas' });
+  const tileset = map.addTilesetImage('plataformas', 'plataformas');
+  const layer = map.createLayer('plataformas', tileset, 0, 0);
 
-    // Filtro para nitidez pixel art
-    ['cielo', 'nubes', 'nubes2'].forEach(key =>
-      this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST)
-    );
+  // agregar colisión a los tiles
+  layer.setCollisionByProperty({ colision: true });
 
-    // Tilemap
-    const map = this.make.tilemap({ key: 'plataformas' });
-    const tileset = map.addTilesetImage('plataformas', 'plataformas');
-    map.createLayer('plataformas', tileset, 0, 0);
-  }
+  // ajustar el tamaño del mundo al tamaño del mapa
+  this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+
+  // crear jugador
+  const objetoJugador = map.getObjectLayer("jugador").objects[0];
+  this.jugador = this.physics.add.sprite(objetoJugador.x, objetoJugador.y, 'jugador');
+  this.jugador.setOrigin(0.5, 1);
+
+  // limita al jugador dentro del mundo
+  this.jugador.setCollideWorldBounds(true);
+
+  // colision con las plataformas
+  this.physics.add.collider(this.jugador, layer);
+}
+
 
   update() {
     const speed1 = 0.3;
