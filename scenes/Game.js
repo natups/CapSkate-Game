@@ -9,7 +9,10 @@ export default class game extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('jugador', 'public/assets/jugador1.png');
+    this.load.spritesheet('jugador', 'public/assets/jugador.png', {
+      frameWidth: 32,
+      frameHeight: 32
+    });
 
     this.load.image('cielo', 'public/assets/fondos/cielo.png');
     this.load.image('nubes', 'public/assets/fondos/nubes.png');
@@ -54,18 +57,6 @@ export default class game extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
-    // crear jugador
-    const objetoJugador = map.getObjectLayer("jugador").objects[0];
-    this.jugador = this.physics.add.sprite(objetoJugador.x, objetoJugador.y, 'jugador');
-    this.jugador.setOrigin(0.5, 1);
-    this.jugador.setVelocityX(120);
-    this.teclaEspacio = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    this.jugador.setCollideWorldBounds(true);
-    this.jugador.setDepth(2); // el jugador pasa por delante del trampolín
-    this.physics.add.collider(this.jugador, layer);
-    this.cameras.main.startFollow(this.jugador, true, 1, 1);
-    this.cameras.main.setFollowOffset(-100, 0);
-
     // animación del trampolín
     this.anims.create({
       key: 'trampolin_salto',
@@ -81,6 +72,34 @@ export default class game extends Phaser.Scene {
       frameRate: 6,
       repeat: -1
     });
+
+    // animaciones del personaje
+    this.anims.create({
+      key: 'carpincho_avanza',
+      frames: this.anims.generateFrameNumbers('jugador', { start: 0, end: 1 }),
+      frameRate: 8,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: 'carpincho_salta',
+      frames: this.anims.generateFrameNumbers('jugador', { start: 1, end: 3 }),
+      frameRate: 12,
+      repeat: 0
+    });
+
+    // crear jugador
+    const objetoJugador = map.getObjectLayer("jugador").objects[0];
+    this.jugador = this.physics.add.sprite(objetoJugador.x, objetoJugador.y, 'jugador');
+    this.jugador.setOrigin(0.5, 1);
+    this.jugador.setVelocityX(120);
+    this.teclaEspacio = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.jugador.setCollideWorldBounds(true);
+    this.jugador.setDepth(2); // el jugador pasa por delante del trampolín
+    this.physics.add.collider(this.jugador, layer);
+    this.cameras.main.startFollow(this.jugador, true, 1, 1);
+    this.cameras.main.setFollowOffset(-100, 0);
+    this.jugador.play('carpincho_avanza');
 
     // grupo de trampolines
     this.trampolines = this.physics.add.group({
@@ -104,6 +123,7 @@ export default class game extends Phaser.Scene {
       if (jugador.body.velocity.y > 0) {
         trampolin.play('trampolin_salto', true);
         jugador.setVelocityY(-450); // fuerza del rebote
+        jugador.play('carpincho_salta', true);
       }
     });
 
@@ -176,12 +196,23 @@ export default class game extends Phaser.Scene {
     this.cielo.tilePositionX = scrollX * 0.2;
 
     if (this.jugador.body.blocked.down) {
+      if (this.jugador.anims.currentAnim && this.jugador.anims.currentAnim.key !== 'carpincho_avanza') {
+        this.jugador.setFrame(5); // aterriza
+        this.time.delayedCall(100, () => {
+          this.jugador.play('carpincho_avanza');
+        });
+      }
       this.saltos = 0;
     }
 
     if (Phaser.Input.Keyboard.JustDown(this.teclaEspacio) && this.saltos < 2) {
       this.jugador.setVelocityY(-300);
       this.saltos++;
+      this.jugador.play('carpincho_salta', true);
+    }
+
+    if (!this.jugador.body.blocked.down && this.jugador.body.velocity.y > 0) {
+      this.jugador.setFrame(4); // caída
     }
   }
 }
