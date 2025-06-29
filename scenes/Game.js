@@ -14,14 +14,12 @@ export default class game extends Phaser.Scene {
       frameHeight: 32
     });
 
-    this.load.image('cielo', 'public/assets/fondos/cielo.png');
-    this.load.image('nubes', 'public/assets/fondos/nubes.png');
-    this.load.image('nubes2', 'public/assets/fondos/nubes2.png');
+    this.load.image('cielo', 'public/assets/cielo.png');
+    this.load.image('nubes', 'public/assets/nubes.png');
+    this.load.image('nubes2', 'public/assets/nubes2.png');
 
     this.load.image('plataformas', 'public/assets/tilemap/plataformas.png');
     this.load.tilemapTiledJSON('plataformas', 'public/assets/tilemap/plataformas.json');
-
-    this.load.image('alfajor', 'public/assets/alfajor.png');
 
     this.load.spritesheet('trampolin', 'public/assets/trampolin.png', {
       frameWidth: 32,
@@ -46,16 +44,16 @@ export default class game extends Phaser.Scene {
     );
 
     // cargar mapa y capa
-    const map = this.make.tilemap({ key: 'plataformas' });
-    const tileset = map.addTilesetImage('plataformas', 'plataformas');
-    const layer = map.createLayer('plataformas', tileset, 0, 0);
+    this.map = this.make.tilemap({ key: 'plataformas' });
+    const tileset = this.map.addTilesetImage('plataformas', 'plataformas');
+    const layer = this.map.createLayer('plataformas', tileset, 0, 0);
 
     // agregar colisión a los tiles
     layer.setCollisionByProperty({ colision: true });
 
     // ajustar el tamaño del mundo al tamaño del mapa
-    this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
-    this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+    this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels + 200);
+    this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
 
     // animación del trampolín
     this.anims.create({
@@ -77,7 +75,7 @@ export default class game extends Phaser.Scene {
     this.anims.create({
       key: 'carpincho_avanza',
       frames: this.anims.generateFrameNumbers('jugador', { start: 0, end: 1 }),
-      frameRate: 8,
+      frameRate: 4,
       repeat: -1
     });
 
@@ -89,7 +87,7 @@ export default class game extends Phaser.Scene {
     });
 
     // crear jugador
-    const objetoJugador = map.getObjectLayer("jugador").objects[0];
+    const objetoJugador = this.map.getObjectLayer("jugador").objects[0];
     this.jugador = this.physics.add.sprite(objetoJugador.x, objetoJugador.y, 'jugador');
     this.jugador.setOrigin(0.5, 1);
     this.jugador.setVelocityX(120);
@@ -107,7 +105,7 @@ export default class game extends Phaser.Scene {
       immovable: true
     });
 
-    const objetosTrampolines = map.getObjectLayer("trampolines").objects;
+    const objetosTrampolines = this.map.getObjectLayer("trampolines").objects;
     objetosTrampolines.forEach(obj => {
       const trampolin = this.trampolines.create(obj.x, obj.y, 'trampolin');
       trampolin.setOrigin(0, 1);
@@ -132,7 +130,7 @@ export default class game extends Phaser.Scene {
       allowGravity: false
     });
 
-    const objetosItems = map.getObjectLayer("items").objects;
+    const objetosItems = this.map.getObjectLayer("items").objects;
     objetosItems.forEach(obj => {
       const alfajor = this.alfajores.create(obj.x, obj.y, 'alfajor_animado').setOrigin(0.5, 1);
       alfajor.play('alfajor_brillo'); // animación de brillo
@@ -213,6 +211,14 @@ export default class game extends Phaser.Scene {
 
     if (!this.jugador.body.blocked.down && this.jugador.body.velocity.y > 0) {
       this.jugador.setFrame(4); // caída
+    }
+
+    // si el jugador se cae de la plataforma
+    if (this.jugador.y > this.map.heightInPixels + 100) {
+      this.scene.start('gameOver', {
+      tiempoFinal: this.tiempoJugado,
+      alfajores: this.alfajoresRecolectados
+      });
     }
   }
 }

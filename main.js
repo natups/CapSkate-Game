@@ -1,5 +1,6 @@
 import mainMenu from "./scenes/MainMenu.js";
 import game from "./scenes/Game.js";
+import gameOver from "./scenes/gameOver.js";
 
 const config = {
   type: Phaser.AUTO,
@@ -23,7 +24,7 @@ const config = {
     antialias: false,
     roundPixels: true
   },
-  scene: [mainMenu, game],
+  scene: [mainMenu, game, gameOver],
 };
 
 window.game = new Phaser.Game(config);
