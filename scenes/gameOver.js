@@ -1,4 +1,4 @@
-export default class GameOver extends Phaser.Scene {
+export default class gameOver extends Phaser.Scene {
   constructor() {
     super("gameOver");
   }
@@ -37,6 +37,20 @@ init(data) {
       resolution: 2
     });
 
+    this.add.text(50, 120, `Tiempo: ${this.tiempoFinal}s`, {
+    fontFamily: 'PressStart2P',
+    fontSize: '8px',
+    color: '#ffffff',
+    resolution: 2
+    });
+
+    this.add.text(50, 135, `Alfajores: x${this.alfajoresRecolectados}`, {
+    fontFamily: 'PressStart2P',
+    fontSize: '8px',
+    color: '#ffffff',
+    resolution: 2
+    });
+
     this.add.text(50, 150, 'Presiona ENTER para reiniciar', {
       fontFamily: 'PressStart2P',
       fontSize: '8px',
@@ -44,9 +58,10 @@ init(data) {
       resolution: 2
     });
 
-    this.input.keyboard.once('keydown-SPACE', () => {
-      this.scene.start('game'); // volver a la escena de juego
+    this.input.keyboard.once('keydown-ENTER', () => {
+     this.scene.start('game');
     });
+
   }
 
   update() {

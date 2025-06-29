@@ -154,13 +154,13 @@ export default class game extends Phaser.Scene {
     });
 
     // texto contador alfajores
-    this.alfajorIcono = this.add.sprite(4, 12, 'alfajor_animado')
+    this.alfajorIcono = this.add.sprite(20, 18, 'alfajor_animado')
       .setOrigin(0, 0.5)
       .setScale(1)
       .setScrollFactor(0);
     this.alfajorIcono.play('alfajor_brillo');
 
-    this.textoAlfajores = this.add.text(20, 8, 'x0', {
+    this.textoAlfajores = this.add.text(40, 15, 'x0', {
       fontFamily: 'PressStart2P',
       fontSize: '8px',
       color: '#ffffff',
@@ -168,7 +168,7 @@ export default class game extends Phaser.Scene {
     }).setScrollFactor(0).setOrigin(0);
 
     // texto del tiempo jugado
-    this.textoTiempo = this.add.text(220, 8, 'Time: 0s', {
+    this.textoTiempo = this.add.text(230, 15, 'Time: 0s', {
       fontFamily: 'PressStart2P',
       fontSize: '8px',
       color: '#ffffff',
