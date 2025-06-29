@@ -1,6 +1,7 @@
 export default class game extends Phaser.Scene {
   constructor() {
     super("game");
+    this.alfajoresRecolectados = 0; // contador
   }
 
   preload() {
@@ -12,6 +13,13 @@ export default class game extends Phaser.Scene {
 
     this.load.image('plataformas', 'public/assets/tilemap/plataformas.png');
     this.load.tilemapTiledJSON('plataformas', 'public/assets/tilemap/plataformas.json');
+
+    this.load.image('alfajor', 'public/assets/alfajor.png');
+
+    this.load.spritesheet('trampolin', 'public/assets/trampolin.png', {
+      frameWidth: 32,
+      frameHeight: 32
+    });
   }
 
   create() {
@@ -40,45 +48,94 @@ export default class game extends Phaser.Scene {
     const objetoJugador = map.getObjectLayer("jugador").objects[0];
     this.jugador = this.physics.add.sprite(objetoJugador.x, objetoJugador.y, 'jugador');
     this.jugador.setOrigin(0.5, 1);
-
-    // movimiento jugador (velocidad constante hacia la derecha)
     this.jugador.setVelocityX(120);
-
-    // entrada del teclado para salto
-    this.saltos = 0; // para permitir doble salto
     this.teclaEspacio = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-
-    // limita al jugador dentro del mundo
     this.jugador.setCollideWorldBounds(true);
-
-    // colision con las plataformas
     this.physics.add.collider(this.jugador, layer);
-
-    // la cámara sigue al jugador
     this.cameras.main.startFollow(this.jugador, true, 1, 1);
 
-    // guardamos el tilemap para usar scrollX en update
-    this.layer = layer;
+    // animación del trampolín
+    this.anims.create({
+      key: 'trampolin_salto',
+      frames: this.anims.generateFrameNumbers('trampolin', { start: 0, end: 5 }),
+      frameRate: 10,
+      repeat: 0
+    });
+
+    // grupo de trampolines
+    this.trampolines = this.physics.add.group({
+      allowGravity: false,
+      immovable: true
+    });
+
+    const objetosTrampolines = map.getObjectLayer("trampolines").objects;
+    objetosTrampolines.forEach(obj => {
+    const trampolin = this.trampolines.create(obj.x, obj.y, 'trampolin');
+    trampolin.setOrigin(0, 1); 
+
+    // ajustar el área de colisión, solo la parte rosa del trampolin
+    trampolin.body.setSize(32, 8);  // ancho 32px, alto 8px 
+    trampolin.body.setOffset(0, 24); // mueve el hitbox 24px hacia abajo 
+    });
+
+    // cambio de collider por overlap controlar mejor el rebote
+    this.physics.add.overlap(this.jugador, this.trampolines, (jugador, trampolin) => {
+      if (jugador.body.velocity.y > 0) {
+        trampolin.play('trampolin_salto', true);
+        jugador.setVelocityY(-450); // fuerza del rebote
+      }
+    });
+
+
+    // grupo de alfajores / items
+    this.alfajores = this.physics.add.group({
+      allowGravity: false
+    });
+
+    const objetosItems = map.getObjectLayer("items").objects;
+    objetosItems.forEach(obj => {
+      const alfajor = this.alfajores.create(obj.x, obj.y, 'alfajor').setOrigin(0.5, 1);
+      // efecto item flotante
+      this.tweens.add({
+        targets: alfajor,
+        y: alfajor.y - 5,
+        duration: 800,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    });
+
+    // recoger alfajores
+    this.physics.add.overlap(this.jugador, this.alfajores, (jugador, alfajor) => {
+      alfajor.destroy();
+      this.alfajoresRecolectados++;
+      this.textoAlfajores.setText(`x${this.alfajoresRecolectados}`);
+    });
+
+    // texto contador alfajores
+    this.textoAlfajores = this.add.text(8, 8, 'x0', {
+      fontFamily: 'PressStart2P',
+      fontSize: '8px',
+      color: '#ffffff',
+      resolution: 2
+    }).setScrollFactor(0).setOrigin(0);
   }
 
   update() {
-    const scrollX = this.cameras.main.scrollX;
+    const scrollX = Math.floor(this.cameras.main.scrollX);
 
-    // Parallax del fondo
     this.nubesA.tilePositionX = scrollX * 0.5;
     this.nubes2A.tilePositionX = scrollX * 0.3;
     this.cielo.tilePositionX = scrollX * 0.2;
 
-    // saltos !! --> resetear saltos si el jugador toca el suelo
     if (this.jugador.body.blocked.down) {
       this.saltos = 0;
     }
 
-    // salto o doble salto
     if (Phaser.Input.Keyboard.JustDown(this.teclaEspacio) && this.saltos < 2) {
       this.jugador.setVelocityY(-300);
       this.saltos++;
     }
-
   }
 }
