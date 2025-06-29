@@ -1,7 +1,11 @@
 export default class game extends Phaser.Scene {
   constructor() {
     super("game");
+  }
+
+  init(data) {
     this.alfajoresRecolectados = 0; // contador
+    this.tiempoJugado = 0; // tiempo en segundos
   }
 
   preload() {
@@ -20,13 +24,19 @@ export default class game extends Phaser.Scene {
       frameWidth: 32,
       frameHeight: 32
     });
+
+    // sprite sheet animado del alfajor
+    this.load.spritesheet('alfajor_animado', 'public/assets/alfajorSpriteSheet.png', {
+      frameWidth: 16,
+      frameHeight: 16
+    });
   }
 
   create() {
     // cielo y nubes con parallax
     this.cielo = this.add.tileSprite(0, 0, 320, 240, 'cielo').setOrigin(0).setScrollFactor(0);
-    this.nubesA = this.add.tileSprite(0, 5, 320, 240, 'nubes').setOrigin(0).setScrollFactor(0);
-    this.nubes2A = this.add.tileSprite(0, 5, 320, 240, 'nubes2').setOrigin(0).setScrollFactor(0);
+    this.nubesA = this.add.tileSprite(0, -15, 320, 240, 'nubes').setOrigin(0).setScrollFactor(0);
+    this.nubes2A = this.add.tileSprite(0, -10, 320, 240, 'nubes2').setOrigin(0).setScrollFactor(0);
 
     ['cielo', 'nubes', 'nubes2'].forEach(key =>
       this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST)
@@ -51,8 +61,10 @@ export default class game extends Phaser.Scene {
     this.jugador.setVelocityX(120);
     this.teclaEspacio = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.jugador.setCollideWorldBounds(true);
+    this.jugador.setDepth(2); // el jugador pasa por delante del trampolín
     this.physics.add.collider(this.jugador, layer);
     this.cameras.main.startFollow(this.jugador, true, 1, 1);
+    this.cameras.main.setFollowOffset(-100, 0);
 
     // animación del trampolín
     this.anims.create({
@@ -60,6 +72,14 @@ export default class game extends Phaser.Scene {
       frames: this.anims.generateFrameNumbers('trampolin', { start: 0, end: 5 }),
       frameRate: 10,
       repeat: 0
+    });
+
+    // animación del alfajor (brillo)
+    this.anims.create({
+      key: 'alfajor_brillo',
+      frames: this.anims.generateFrameNumbers('alfajor_animado', { start: 0, end: 4 }),
+      frameRate: 6,
+      repeat: -1
     });
 
     // grupo de trampolines
@@ -70,12 +90,13 @@ export default class game extends Phaser.Scene {
 
     const objetosTrampolines = map.getObjectLayer("trampolines").objects;
     objetosTrampolines.forEach(obj => {
-    const trampolin = this.trampolines.create(obj.x, obj.y, 'trampolin');
-    trampolin.setOrigin(0, 1); 
+      const trampolin = this.trampolines.create(obj.x, obj.y, 'trampolin');
+      trampolin.setOrigin(0, 1);
+      trampolin.setDepth(1); // el trampolín está detrás del jugador
 
-    // ajustar el área de colisión, solo la parte rosa del trampolin
-    trampolin.body.setSize(32, 8);  // ancho 32px, alto 8px 
-    trampolin.body.setOffset(0, 24); // mueve el hitbox 24px hacia abajo 
+      // ajustar el área de colisión, solo la parte rosa del trampolin
+      trampolin.body.setSize(32, 8);  // ancho 32px, alto 8px 
+      trampolin.body.setOffset(0, 24); // mueve el hitbox 24px hacia abajo 
     });
 
     // cambio de collider por overlap controlar mejor el rebote
@@ -86,7 +107,6 @@ export default class game extends Phaser.Scene {
       }
     });
 
-
     // grupo de alfajores / items
     this.alfajores = this.physics.add.group({
       allowGravity: false
@@ -94,7 +114,9 @@ export default class game extends Phaser.Scene {
 
     const objetosItems = map.getObjectLayer("items").objects;
     objetosItems.forEach(obj => {
-      const alfajor = this.alfajores.create(obj.x, obj.y, 'alfajor').setOrigin(0.5, 1);
+      const alfajor = this.alfajores.create(obj.x, obj.y, 'alfajor_animado').setOrigin(0.5, 1);
+      alfajor.play('alfajor_brillo'); // animación de brillo
+
       // efecto item flotante
       this.tweens.add({
         targets: alfajor,
@@ -114,12 +136,36 @@ export default class game extends Phaser.Scene {
     });
 
     // texto contador alfajores
-    this.textoAlfajores = this.add.text(8, 8, 'x0', {
+    this.alfajorIcono = this.add.sprite(4, 12, 'alfajor_animado')
+      .setOrigin(0, 0.5)
+      .setScale(1)
+      .setScrollFactor(0);
+    this.alfajorIcono.play('alfajor_brillo');
+
+    this.textoAlfajores = this.add.text(20, 8, 'x0', {
       fontFamily: 'PressStart2P',
       fontSize: '8px',
       color: '#ffffff',
       resolution: 2
     }).setScrollFactor(0).setOrigin(0);
+
+    // texto del tiempo jugado
+    this.textoTiempo = this.add.text(220, 8, 'Time: 0s', {
+      fontFamily: 'PressStart2P',
+      fontSize: '8px',
+      color: '#ffffff',
+      resolution: 2
+    }).setScrollFactor(0).setOrigin(0);
+
+    // temporizador de juego (suma 1 segundo por segundo)
+    this.time.addEvent({
+      delay: 1000,
+      loop: true,
+      callback: () => {
+        this.tiempoJugado++;
+        this.textoTiempo.setText(`Time: ${this.tiempoJugado}s`);
+      }
+    });
   }
 
   update() {
