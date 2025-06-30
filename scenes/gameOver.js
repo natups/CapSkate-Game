@@ -4,110 +4,158 @@ export default class GameOver extends Phaser.Scene {
   }
 
   init(data) {
-    this.tiempoFinal = data.tiempoFinal;
-    this.alfajoresRecolectados = data.alfajores;
+    this.alfajoresRecolectados = 0;
+    this.tiempoJugado = 0;
   }
 
   preload() {
-    this.load.image("cielo", "public/assets/cielo.png");
-    this.load.image("nubes", "public/assets/nubes.png");
-    this.load.image("nubes2", "public/assets/nubes2.png");
-
-    // Cargar la fuente bitmap blanca
-    this.load.bitmapFont(
-      "PublicPixel",
-      "public/assets/fonts/PublicPixel.png",
-      "public/assets/fonts/PublicPixel.fnt"
-    );
+    this.load.spritesheet('jugador', 'public/assets/jugador.png', { frameWidth: 32, frameHeight: 32 });
+    this.load.image('cielo', 'public/assets/cielo.png');
+    this.load.image('nubes', 'public/assets/nubes.png');
+    this.load.image('nubes2', 'public/assets/nubes2.png');
+    this.load.image('plataformaTierra', 'public/assets/tilemap/plataformaTierra.png');
+    this.load.image('obstaculos', 'public/assets/tilemap/obstaculos.png');
+    this.load.tilemapTiledJSON('plataformas', 'public/assets/tilemap/plataformas.json');
+    this.load.spritesheet('trampolin', 'public/assets/trampolin.png', { frameWidth: 32, frameHeight: 32 });
+    this.load.spritesheet('alfajor_animado', 'public/assets/alfajorSpriteSheet.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('spacebar', 'public/assets/spaceBar.png', { frameWidth: 96, frameHeight: 32 });
   }
 
   create() {
-    // Filtro para pixel perfect
-    ['cielo', 'nubes', 'nubes2'].forEach(key =>
-      this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST)
-    );
+    this.cielo = this.add.tileSprite(0, 0, 320, 240, 'cielo').setOrigin(0).setScrollFactor(0);
+    this.nubesA = this.add.tileSprite(0, -15, 320, 240, 'nubes').setOrigin(0).setScrollFactor(0);
+    this.nubes2A = this.add.tileSprite(0, -10, 320, 240, 'nubes2').setOrigin(0).setScrollFactor(0);
+    ['cielo', 'nubes', 'nubes2'].forEach(key => this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
 
-    // Fondo cielo (estático)
-    this.fondoCielo = this.add.image(0, 0, "cielo").setOrigin(0);
+    this.map = this.make.tilemap({ key: 'plataformas' });
+    const tilesetPlataforma = this.map.addTilesetImage('plataformaTierra', 'plataformaTierra');
+    const tilesetObstaculos = this.map.addTilesetImage('obstaculos', 'obstaculos');
 
-    // Nubes duplicadas para scroll infinito
-    this.nubesA = this.add.image(0, -20, "nubes").setOrigin(0);
-    this.nubesB = this.add.image(this.nubesA.width, -20, "nubes").setOrigin(0);
+    const layer = this.map.createLayer('plataformas', tilesetPlataforma, 0, 0);
+    layer.setCollisionByProperty({ colision: true });
 
-    this.nubes2A = this.add.image(0, -5, "nubes2").setOrigin(0);
-    this.nubes2B = this.add.image(this.nubes2A.width, -5, "nubes2").setOrigin(0);
+    this.map.createLayer('obstaculos', tilesetObstaculos, 0, 0); // solo visual, sin colisión
 
-    // Cambié los textos a bitmapText con PublicPixel y tamaño adecuado
-    this.add.bitmapText(160, 90, "PublicPixel", '¡PERDISTE!', 16)
-      .setTint(0xff0000)
-      .setOrigin(0.5);
-
-    this.add.bitmapText(150, 120, "PublicPixel", `Tiempo: ${this.tiempoFinal}s`, 8)
-      .setOrigin(0.5);
-
-    // Icono alfajor animado (como en Game)
-    this.alfajorIcono = this.add.sprite(135, 140, 'alfajor_animado')
-      .setOrigin(0, 0.5)
-      .setScale(1.2); // podés ajustar el tamaño
-    this.alfajorIcono.play('alfajor_brillo');
-
-    // Texto cantidad recolectada
-    this.textoAlfajores = this.add.bitmapText(160, 140, "PublicPixel", `x${this.alfajoresRecolectados}`, 8)
-      .setOrigin(0, 0.5)
-      .setTint(0xffffff);
-
-
-    this.add.bitmapText(160, 170, "PublicPixel", 'R: reiniciar  ESC: menú', 8)
-      .setOrigin(0.5);
-
-    // Al presionar R reiniciar el juego, guardando record primero
-    this.input.keyboard.once('keydown-R', () => {
-      this.guardarRecord();
-      this.scene.start('Game');
+    this.obstaculos = this.physics.add.staticGroup();
+    const objetosObstaculos = this.map.getObjectLayer("colisionObs").objects;
+    objetosObstaculos.forEach(obj => {
+      const obstaculo = this.obstaculos.create(obj.x, obj.y, null).setOrigin(0);
+      obstaculo.body.setSize(obj.width, obj.height);
     });
 
-    // Al presionar ESC volver al menú, guardando record primero
-    this.input.keyboard.once('keydown-ESC', () => {
-      this.guardarRecord();
-      this.scene.start('MainMenu');
+    this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels + 200);
+    this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
+
+    this.anims.create({ key: 'trampolin_salto', frames: this.anims.generateFrameNumbers('trampolin', { start: 0, end: 5 }), frameRate: 10, repeat: 0 });
+    this.anims.create({ key: 'alfajor_brillo', frames: this.anims.generateFrameNumbers('alfajor_animado', { start: 0, end: 4 }), frameRate: 6, repeat: -1 });
+    this.anims.create({ key: 'carpincho_avanza', frames: this.anims.generateFrameNumbers('jugador', { start: 0, end: 1 }), frameRate: 4, repeat: -1 });
+    this.anims.create({ key: 'carpincho_salta', frames: this.anims.generateFrameNumbers('jugador', { start: 1, end: 3 }), frameRate: 12, repeat: 0 });
+    this.anims.create({ key: 'spacebar_anim', frames: this.anims.generateFrameNumbers('spacebar', { start: 0, end: 1 }), frameRate: 2, repeat: -1 });
+
+    const objetoJugador = this.map.getObjectLayer("jugador").objects[0];
+    this.jugador = this.physics.add.sprite(objetoJugador.x, objetoJugador.y, 'jugador');
+    this.jugador.setOrigin(0.5, 1);
+    this.jugador.setVelocityX(120);
+    this.teclaEspacio = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.jugador.setCollideWorldBounds(true);
+    this.jugador.setDepth(2);
+    this.physics.add.collider(this.jugador, layer);
+    this.physics.add.collider(this.jugador, this.obstaculos, () => {
+      this.scene.start('GameOver', { tiempoFinal: this.tiempoJugado, alfajores: this.alfajoresRecolectados });
     });
-  }
 
-  guardarRecord() {
-    const recordGuardado = JSON.parse(localStorage.getItem("record")) || { alfajores: 0, tiempo: 0 };
+    this.cameras.main.startFollow(this.jugador, true, 1, 1);
+    this.cameras.main.setFollowOffset(-80, 0);
+    this.jugador.play('carpincho_avanza');
+    this.saltos = 0;
 
-    // Comparar si se supera en *ambos* valores
-    const superaRecord = this.alfajoresRecolectados > recordGuardado.alfajores ||
-      (this.alfajoresRecolectados === recordGuardado.alfajores && this.tiempoFinal > recordGuardado.tiempo);
-
-    if (superaRecord) {
-      localStorage.setItem("record", JSON.stringify({
-        alfajores: this.alfajoresRecolectados,
-        tiempo: this.tiempoFinal
-      }));
+    if (!this.registry.get('tutorialVisto')) {
+      this.indicacionSalto = this.add.sprite(this.jugador.x - 90, this.jugador.y - 40, 'spacebar').setScrollFactor(0).setDepth(1).setAlpha(0.8).play('spacebar_anim');
+      this.tutorialActivo = true;
+      this.registry.set('tutorialVisto', true);
+    } else {
+      this.tutorialActivo = false;
     }
+
+    this.trampolines = this.physics.add.group({ allowGravity: false, immovable: true });
+    const objetosTrampolines = this.map.getObjectLayer("trampolines").objects;
+    objetosTrampolines.forEach(obj => {
+      const trampolin = this.trampolines.create(obj.x, obj.y, 'trampolin');
+      trampolin.setOrigin(0, 1);
+      trampolin.setDepth(1);
+      trampolin.body.setSize(32, 8);
+      trampolin.body.setOffset(0, 24);
+    });
+
+    this.physics.add.overlap(this.jugador, this.trampolines, (jugador, trampolin) => {
+      if (jugador.body.velocity.y > 0) {
+        trampolin.play('trampolin_salto', true);
+        jugador.setVelocityY(-450);
+        jugador.play('carpincho_salta', true);
+      }
+    });
+
+    this.alfajores = this.physics.add.group({ allowGravity: false });
+    const objetosItems = this.map.getObjectLayer("items").objects;
+    objetosItems.forEach(obj => {
+      const alfajor = this.alfajores.create(obj.x, obj.y, 'alfajor_animado').setOrigin(0.5, 1);
+      alfajor.play('alfajor_brillo');
+      this.tweens.add({ targets: alfajor, y: alfajor.y - 5, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    });
+
+    this.physics.add.overlap(this.jugador, this.alfajores, (jugador, alfajor) => {
+      alfajor.destroy();
+      this.alfajoresRecolectados++;
+      this.textoAlfajores.setText(`x${this.alfajoresRecolectados}`);
+    });
+
+    this.alfajorIcono = this.add.sprite(20, 18, 'alfajor_animado').setOrigin(0, 0.5).setScale(1).setScrollFactor(0);
+    this.alfajorIcono.play('alfajor_brillo');
+    this.textoAlfajores = this.add.bitmapText(40, 15, "PublicPixel", 'x0', 8).setScrollFactor(0).setOrigin(0).setTint(0xf80eae);
+    this.textoTiempo = this.add.bitmapText(230, 15, "PublicPixel", 'Time: 0s', 8).setScrollFactor(0).setOrigin(0);
+
+    this.time.addEvent({ delay: 1000, loop: true, callback: () => {
+      this.tiempoJugado++;
+      this.textoTiempo.setText(`Time: ${this.tiempoJugado}s`);
+    }});
   }
 
   update() {
-    const speed1 = 0.2;
-    const speed2 = 0.5;
+    const scrollX = Math.floor(this.cameras.main.scrollX);
+    this.nubesA.tilePositionX = scrollX * 0.5;
+    this.nubes2A.tilePositionX = scrollX * 0.3;
+    this.cielo.tilePositionX = scrollX * 0.2;
 
-    this.nubesA.x -= speed1;
-    this.nubesB.x -= speed1;
-    if (this.nubesA.x <= -this.nubesA.width) {
-      this.nubesA.x = this.nubesB.x + this.nubesB.width;
-    }
-    if (this.nubesB.x <= -this.nubesB.width) {
-      this.nubesB.x = this.nubesA.x + this.nubesA.width;
+    if (this.jugador.body.blocked.down) {
+      if (this.jugador.anims.currentAnim && this.jugador.anims.currentAnim.key !== 'carpincho_avanza') {
+        this.jugador.setFrame(5);
+        this.time.delayedCall(100, () => {
+          this.jugador.play('carpincho_avanza');
+        });
+      }
+      this.saltos = 0;
     }
 
-    this.nubes2A.x -= speed2;
-    this.nubes2B.x -= speed2;
-    if (this.nubes2A.x <= -this.nubes2A.width) {
-      this.nubes2A.x = this.nubes2B.x + this.nubes2B.width;
+    if (Phaser.Input.Keyboard.JustDown(this.teclaEspacio) && this.saltos < 2) {
+      this.jugador.setVelocityY(-300);
+      this.saltos++;
+      this.jugador.play('carpincho_salta', true);
+
+      if (this.tutorialActivo) {
+        this.tutorialActivo = false;
+        this.indicacionSalto.destroy();
+      }
     }
-    if (this.nubes2B.x <= -this.nubes2B.width) {
-      this.nubes2B.x = this.nubes2A.x + this.nubes2A.width;
+
+    if (!this.jugador.body.blocked.down && this.jugador.body.velocity.y > 0) {
+      this.jugador.setFrame(4);
+    }
+
+    if (this.jugador.y > this.map.heightInPixels + 100) {
+      this.scene.start('GameOver', {
+        tiempoFinal: this.tiempoJugado,
+        alfajores: this.alfajoresRecolectados
+      });
     }
   }
 }

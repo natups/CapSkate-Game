@@ -33,6 +33,13 @@ export default class Game extends Phaser.Scene {
       frameWidth: 16,
       frameHeight: 16
     });
+
+    // ui barra espaciadora
+    this.load.spritesheet('spacebar', 'public/assets/spaceBar.png', {
+      frameWidth: 96,
+      frameHeight: 32
+    });
+
   }
 
   create() {
@@ -93,6 +100,13 @@ export default class Game extends Phaser.Scene {
       repeat: 0
     });
 
+    this.anims.create({
+      key: 'spacebar_anim',
+      frames: this.anims.generateFrameNumbers('spacebar', { start: 0, end: 1 }),
+      frameRate: 2,
+      repeat: -1
+    });
+
     // crear jugador
     const objetoJugador = this.map.getObjectLayer("jugador").objects[0];
     this.jugador = this.physics.add.sprite(objetoJugador.x, objetoJugador.y, 'jugador');
@@ -100,12 +114,26 @@ export default class Game extends Phaser.Scene {
     this.jugador.setVelocityX(120);
     this.teclaEspacio = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.jugador.setCollideWorldBounds(true);
-    this.jugador.setDepth(2); // delante del trampolín
+    this.jugador.setDepth(2);
     this.physics.add.collider(this.jugador, layer);
     this.cameras.main.startFollow(this.jugador, true, 1, 1);
     this.cameras.main.setFollowOffset(-80, 0);
     this.jugador.play('carpincho_avanza');
     this.saltos = 0;
+
+    // muestro tutorial solo si no se vio antes
+    if (!this.registry.get('tutorialVisto')) {
+      this.indicacionSalto = this.add.sprite(this.jugador.x - 90, this.jugador.y - 40, 'spacebar')
+        .setScrollFactor(0)
+        .setDepth(1)
+        .setAlpha(0.8)
+        .play('spacebar_anim');
+
+      this.tutorialActivo = true;
+      this.registry.set('tutorialVisto', true);
+    } else {
+      this.tutorialActivo = false;
+    }
 
     // trampolines
     this.trampolines = this.physics.add.group({
@@ -209,6 +237,11 @@ export default class Game extends Phaser.Scene {
       this.jugador.setVelocityY(-300);
       this.saltos++;
       this.jugador.play('carpincho_salta', true);
+
+      if (this.tutorialActivo) {
+        this.tutorialActivo = false;
+        this.indicacionSalto.destroy();
+      }
     }
 
     if (!this.jugador.body.blocked.down && this.jugador.body.velocity.y > 0) {
