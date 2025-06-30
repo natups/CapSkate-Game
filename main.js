@@ -1,6 +1,6 @@
-import mainMenu from "./scenes/MainMenu.js";
-import game from "./scenes/Game.js";
-import gameOver from "./scenes/gameOver.js";
+import MainMenu from "./scenes/MainMenu.js";
+import Game from "./scenes/Game.js";
+import GameOver from "./scenes/GameOver.js";
 
 const config = {
   type: Phaser.AUTO,
@@ -19,13 +19,7 @@ const config = {
       debug: false,
     },
   },
-  render:{
-    pixelArt: true,
-    antialias: false,
-    roundPixels: true
-  },
-  scene: [mainMenu, game, gameOver],
+  scene: [MainMenu, Game, GameOver],
 };
 
 window.game = new Phaser.Game(config);
-

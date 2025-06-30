@@ -1,6 +1,6 @@
-export default class game extends Phaser.Scene {
+export default class Game extends Phaser.Scene {
   constructor() {
-    super("game");
+    super("Game");
   }
 
   init(data) {
@@ -153,25 +153,21 @@ export default class game extends Phaser.Scene {
       this.textoAlfajores.setText(`x${this.alfajoresRecolectados}`);
     });
 
-    // texto contador alfajores
+    // texto contador alfajores (reemplazado con bitmapText)
     this.alfajorIcono = this.add.sprite(20, 18, 'alfajor_animado')
       .setOrigin(0, 0.5)
       .setScale(1)
       .setScrollFactor(0);
     this.alfajorIcono.play('alfajor_brillo');
 
-    this.textoAlfajores = this.add.text(40, 15, 'x0', {
-      fontFamily: 'Courier',
-      fontSize: '8px',
-      color: '#ffffff',
-    }).setScrollFactor(0).setOrigin(0);
+    this.textoAlfajores = this.add.bitmapText(40, 15, "PublicPixel", 'x0', 8)
+      .setScrollFactor(0)
+      .setOrigin(0);
 
-    // texto del tiempo jugado
-    this.textoTiempo = this.add.text(230, 15, 'Time: 0s', {
-      fontFamily: 'Courier',
-      fontSize: '8px',
-      color: '#ffffff',
-    }).setScrollFactor(0).setOrigin(0);
+    // texto del tiempo jugado (reemplazado con bitmapText)
+    this.textoTiempo = this.add.bitmapText(230, 15, "PublicPixel", 'Time: 0s', 8)
+      .setScrollFactor(0)
+      .setOrigin(0);
 
     // temporizador de juego (suma 1 segundo por segundo)
     this.time.addEvent({
@@ -213,7 +209,7 @@ export default class game extends Phaser.Scene {
 
     // si el jugador se cae de la plataforma
     if (this.jugador.y > this.map.heightInPixels + 100) {
-      this.scene.start('gameOver', {
+      this.scene.start('GameOver', {
       tiempoFinal: this.tiempoJugado,
       alfajores: this.alfajoresRecolectados
       });

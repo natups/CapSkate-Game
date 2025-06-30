@@ -1,6 +1,6 @@
-export default class gameOver extends Phaser.Scene {
+export default class GameOver extends Phaser.Scene {
   constructor() {
-    super("gameOver");
+    super("GameOver");
   }
 
   init(data) {
@@ -12,6 +12,13 @@ export default class gameOver extends Phaser.Scene {
     this.load.image("cielo", "public/assets/cielo.png");
     this.load.image("nubes", "public/assets/nubes.png");
     this.load.image("nubes2", "public/assets/nubes2.png");
+
+    // Cargar la fuente bitmap blanca
+    this.load.bitmapFont(
+      "PublicPixel",
+      "public/assets/fonts/PublicPixel.png",
+      "public/assets/fonts/PublicPixel.fnt"
+    );
   }
 
   create() {
@@ -30,36 +37,35 @@ export default class gameOver extends Phaser.Scene {
     this.nubes2A = this.add.image(0, -5, "nubes2").setOrigin(0);
     this.nubes2B = this.add.image(this.nubes2A.width, -5, "nubes2").setOrigin(0);
 
-    this.add.text(80, 100, '¡PERDISTE!', {
-      fontFamily: 'Courier',
-      fontSize: '16px',
-      color: '#ff0000',
-    });
+    // Cambié los textos a bitmapText con PublicPixel y tamaño adecuado
+    this.add.bitmapText(160, 90, "PublicPixel", '¡PERDISTE!', 16)
+      .setTint(0xff0000)
+      .setOrigin(0.5);
 
-    this.add.text(50, 120, `Tiempo: ${this.tiempoFinal}s`, {
-      fontFamily: 'Courier',
-      fontSize: '8px',
-      color: '#ffffff',
-    });
+    this.add.bitmapText(150, 120, "PublicPixel", `Tiempo: ${this.tiempoFinal}s`, 8)
+      .setOrigin(0.5);
 
-    this.add.text(50, 135, `Alfajores: x${this.alfajoresRecolectados}`, {
-      fontFamily: 'Courier',
-      fontSize: '8px',
-      color: '#ffffff',
-    });
+    // Icono alfajor animado (como en Game)
+    this.alfajorIcono = this.add.sprite(135, 140, 'alfajor_animado')
+      .setOrigin(0, 0.5)
+      .setScale(1.2); // podés ajustar el tamaño
+    this.alfajorIcono.play('alfajor_brillo');
 
-    this.add.text(50, 155, 'R: reiniciar  ESC: menú', {
-      fontFamily: 'Courier',
-      fontSize: '8px',
-      color: '#ffffff',
-    });
+    // Texto cantidad recolectada
+    this.textoAlfajores = this.add.bitmapText(160, 140, "PublicPixel", `x${this.alfajoresRecolectados}`, 8)
+      .setOrigin(0, 0.5)
+      .setTint(0xffffff);
+
+
+    this.add.bitmapText(160, 170, "PublicPixel", 'R: reiniciar  ESC: menú', 8)
+      .setOrigin(0.5);
 
     this.input.keyboard.once('keydown-R', () => {
-      this.scene.start('game');
+      this.scene.start('Game');
     });
 
     this.input.keyboard.once('keydown-ESC', () => {
-    this.scene.start('mainMenu'); 
+      this.scene.start('MainMenu');
     });
   }
 
