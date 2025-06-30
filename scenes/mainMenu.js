@@ -1,6 +1,6 @@
 export default class mainMenu extends Phaser.Scene {
   constructor() {
-    super("menu");
+    super("mainMenu");
   }
 
   preload() {
@@ -11,6 +11,8 @@ export default class mainMenu extends Phaser.Scene {
   }
 
   create() {
+
+    console.log("Creando mainMenu");
     // Filtro para pixel perfect
     ['cielo', 'nubes', 'nubes2'].forEach(key =>
       this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST)
@@ -31,24 +33,19 @@ export default class mainMenu extends Phaser.Scene {
 
     // Texto "Presione ENTER para jugar"
     this.textoStart = this.add.text(160, 180, "> Presione ENTER para jugar", {
-      fontFamily: "PressStart2P",
-      fontSize: "12px",
+      fontFamily: "Courier",
+      fontSize: "10px",
       color: "#ffffff",
-      resolution: 2,
-      align: "center",
-      padding: { x: 0, y: 0 }
+      align: "center"
     }).setOrigin(0.5);
-    this.textoStart.setResolution(2);
 
     // Texto de récord
     const recordGuardado = localStorage.getItem("recordTiempo") || "0.00";
     this.textoRecord = this.add.text(5, 225, "HI-Score: " + recordGuardado, {
-      fontFamily: "PressStart2P",
+      fontFamily: "Courier",
       fontSize: "8px",
-      color: "#ffffff",
-      resolution: 2
+      color: "#ffffff"
     }).setOrigin(0, 0);
-    this.textoRecord.setResolution(2);
 
     // Timer titilar
     this.timerTitilar = 0;

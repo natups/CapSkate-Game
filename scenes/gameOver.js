@@ -3,10 +3,10 @@ export default class gameOver extends Phaser.Scene {
     super("gameOver");
   }
 
-init(data) {
-  this.tiempoFinal = data.tiempoFinal;
-  this.alfajoresRecolectados = data.alfajores;
-}
+  init(data) {
+    this.tiempoFinal = data.tiempoFinal;
+    this.alfajoresRecolectados = data.alfajores;
+  }
 
   preload() {
     this.load.image("cielo", "public/assets/cielo.png");
@@ -24,51 +24,49 @@ init(data) {
     this.fondoCielo = this.add.image(0, 0, "cielo").setOrigin(0);
 
     // Nubes duplicadas para scroll infinito
-    this.nubesA = this.add.image(0, 40, "nubes").setOrigin(0);
-    this.nubesB = this.add.image(this.nubesA.width, 40, "nubes").setOrigin(0);
+    this.nubesA = this.add.image(0, -20, "nubes").setOrigin(0);
+    this.nubesB = this.add.image(this.nubesA.width, -20, "nubes").setOrigin(0);
 
-    this.nubes2A = this.add.image(0, 5, "nubes2").setOrigin(0);
-    this.nubes2B = this.add.image(this.nubes2A.width, 5, "nubes2").setOrigin(0);
+    this.nubes2A = this.add.image(0, -5, "nubes2").setOrigin(0);
+    this.nubes2B = this.add.image(this.nubes2A.width, -5, "nubes2").setOrigin(0);
 
     this.add.text(80, 100, '¡PERDISTE!', {
-      fontFamily: 'PressStart2P',
+      fontFamily: 'Courier',
       fontSize: '16px',
       color: '#ff0000',
-      resolution: 2
     });
 
     this.add.text(50, 120, `Tiempo: ${this.tiempoFinal}s`, {
-    fontFamily: 'PressStart2P',
-    fontSize: '8px',
-    color: '#ffffff',
-    resolution: 2
+      fontFamily: 'Courier',
+      fontSize: '8px',
+      color: '#ffffff',
     });
 
     this.add.text(50, 135, `Alfajores: x${this.alfajoresRecolectados}`, {
-    fontFamily: 'PressStart2P',
-    fontSize: '8px',
-    color: '#ffffff',
-    resolution: 2
-    });
-
-    this.add.text(50, 150, 'Presiona ENTER para reiniciar', {
-      fontFamily: 'PressStart2P',
+      fontFamily: 'Courier',
       fontSize: '8px',
       color: '#ffffff',
-      resolution: 2
     });
 
-    this.input.keyboard.once('keydown-ENTER', () => {
-     this.scene.start('game');
+    this.add.text(50, 155, 'R: reiniciar  ESC: menú', {
+      fontFamily: 'Courier',
+      fontSize: '8px',
+      color: '#ffffff',
     });
 
+    this.input.keyboard.once('keydown-R', () => {
+      this.scene.start('game');
+    });
+
+    this.input.keyboard.once('keydown-ESC', () => {
+    this.scene.start('mainMenu'); 
+    });
   }
 
   update() {
     const speed1 = 0.2;
     const speed2 = 0.5;
 
-    // Nubes 1
     this.nubesA.x -= speed1;
     this.nubesB.x -= speed1;
     if (this.nubesA.x <= -this.nubesA.width) {
@@ -78,7 +76,6 @@ init(data) {
       this.nubesB.x = this.nubesA.x + this.nubesA.width;
     }
 
-    // Nubes 2
     this.nubes2A.x -= speed2;
     this.nubes2B.x -= speed2;
     if (this.nubes2A.x <= -this.nubes2A.width) {
