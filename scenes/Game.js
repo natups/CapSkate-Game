@@ -39,7 +39,6 @@ export default class Game extends Phaser.Scene {
       frameWidth: 96,
       frameHeight: 32
     });
-
   }
 
   create() {
@@ -121,11 +120,14 @@ export default class Game extends Phaser.Scene {
     this.jugador.play('carpincho_avanza');
     this.saltos = 0;
 
-    // muestro tutorial solo si no se vio antes
+    // ---------------------------
+    // MOSTRAR TUTORIAL DE SALTO
+    // ---------------------------
     if (!this.registry.get('tutorialVisto')) {
-      this.indicacionSalto = this.add.sprite(this.jugador.x - 90, this.jugador.y - 40, 'spacebar')
+      // sprite animado de la barra espaciadora (fixed en pantalla)
+      this.indicacionSalto = this.add.sprite(60, 100, 'spacebar')
         .setScrollFactor(0)
-        .setDepth(1)
+        .setDepth(10)
         .setAlpha(0.8)
         .play('spacebar_anim');
 
@@ -240,7 +242,9 @@ export default class Game extends Phaser.Scene {
 
       if (this.tutorialActivo) {
         this.tutorialActivo = false;
-        this.indicacionSalto.destroy();
+        // destruyo el sprite y texto del tutorial
+        if (this.indicacionSalto) this.indicacionSalto.destroy();
+        if (this.indicacionTexto) this.indicacionTexto.destroy();
       }
     }
 
