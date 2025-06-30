@@ -18,7 +18,10 @@ export default class Game extends Phaser.Scene {
     this.load.image('nubes', 'public/assets/nubes.png');
     this.load.image('nubes2', 'public/assets/nubes2.png');
 
-    this.load.image('plataformas', 'public/assets/tilemap/plataformas.png');
+    // tilesets y mapa
+    this.load.image('plataformaTierra', 'public/assets/tilemap/plataformaTierra.png');
+    this.load.image('obstaculos', 'public/assets/tilemap/obstaculos.png'); // tileset obstáculos
+
     this.load.tilemapTiledJSON('plataformas', 'public/assets/tilemap/plataformas.json');
 
     this.load.spritesheet('trampolin', 'public/assets/trampolin.png', {
@@ -26,7 +29,6 @@ export default class Game extends Phaser.Scene {
       frameHeight: 32
     });
 
-    // sprite sheet animado del alfajor
     this.load.spritesheet('alfajor_animado', 'public/assets/alfajorSpriteSheet.png', {
       frameWidth: 16,
       frameHeight: 16
@@ -43,19 +45,24 @@ export default class Game extends Phaser.Scene {
       this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST)
     );
 
-    // cargar mapa y capa
+    // cargar mapa y tilesets
     this.map = this.make.tilemap({ key: 'plataformas' });
-    const tileset = this.map.addTilesetImage('plataformas', 'plataformas');
-    const layer = this.map.createLayer('plataformas', tileset, 0, 0);
 
-    // agregar colisión a los tiles
+    const tilesetPlataforma = this.map.addTilesetImage('plataformaTierra', 'plataformaTierra');
+    const tilesetObstaculos = this.map.addTilesetImage('obstaculos', 'obstaculos');
+
+    // capas
+    const layer = this.map.createLayer('plataformas', tilesetPlataforma, 0, 0);
     layer.setCollisionByProperty({ colision: true });
 
-    // ajustar el tamaño del mundo al tamaño del mapa
+    const capaObstaculos = this.map.createLayer('obstaculos', tilesetObstaculos, 0, 0);
+    capaObstaculos.setCollisionByProperty({ colision: true });
+
+    // ajustar el tamaño del mundo y cámara
     this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels + 200);
     this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
 
-    // animación del trampolín
+    // animación trampolín
     this.anims.create({
       key: 'trampolin_salto',
       frames: this.anims.generateFrameNumbers('trampolin', { start: 0, end: 5 }),
@@ -63,7 +70,7 @@ export default class Game extends Phaser.Scene {
       repeat: 0
     });
 
-    // animación del alfajor (brillo)
+    // animación alfajor
     this.anims.create({
       key: 'alfajor_brillo',
       frames: this.anims.generateFrameNumbers('alfajor_animado', { start: 0, end: 4 }),
@@ -71,7 +78,7 @@ export default class Game extends Phaser.Scene {
       repeat: -1
     });
 
-    // animaciones del personaje
+    // animaciones jugador
     this.anims.create({
       key: 'carpincho_avanza',
       frames: this.anims.generateFrameNumbers('jugador', { start: 0, end: 1 }),
@@ -93,13 +100,14 @@ export default class Game extends Phaser.Scene {
     this.jugador.setVelocityX(120);
     this.teclaEspacio = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.jugador.setCollideWorldBounds(true);
-    this.jugador.setDepth(2); // el jugador pasa por delante del trampolín
+    this.jugador.setDepth(2); // delante del trampolín
     this.physics.add.collider(this.jugador, layer);
     this.cameras.main.startFollow(this.jugador, true, 1, 1);
-    this.cameras.main.setFollowOffset(-100, 0);
+    this.cameras.main.setFollowOffset(-80, 0);
     this.jugador.play('carpincho_avanza');
+    this.saltos = 0;
 
-    // grupo de trampolines
+    // trampolines
     this.trampolines = this.physics.add.group({
       allowGravity: false,
       immovable: true
@@ -109,33 +117,26 @@ export default class Game extends Phaser.Scene {
     objetosTrampolines.forEach(obj => {
       const trampolin = this.trampolines.create(obj.x, obj.y, 'trampolin');
       trampolin.setOrigin(0, 1);
-      trampolin.setDepth(1); // el trampolín está detrás del jugador
-
-      // ajustar el área de colisión, solo la parte rosa del trampolin
-      trampolin.body.setSize(32, 8);  // ancho 32px, alto 8px 
-      trampolin.body.setOffset(0, 24); // mueve el hitbox 24px hacia abajo 
+      trampolin.setDepth(1);
+      trampolin.body.setSize(32, 8);
+      trampolin.body.setOffset(0, 24);
     });
 
-    // cambio de collider por overlap controlar mejor el rebote
     this.physics.add.overlap(this.jugador, this.trampolines, (jugador, trampolin) => {
       if (jugador.body.velocity.y > 0) {
         trampolin.play('trampolin_salto', true);
-        jugador.setVelocityY(-450); // fuerza del rebote
+        jugador.setVelocityY(-450);
         jugador.play('carpincho_salta', true);
       }
     });
 
-    // grupo de alfajores / items
-    this.alfajores = this.physics.add.group({
-      allowGravity: false
-    });
+    // alfajores
+    this.alfajores = this.physics.add.group({ allowGravity: false });
 
     const objetosItems = this.map.getObjectLayer("items").objects;
     objetosItems.forEach(obj => {
       const alfajor = this.alfajores.create(obj.x, obj.y, 'alfajor_animado').setOrigin(0.5, 1);
-      alfajor.play('alfajor_brillo'); // animación de brillo
-
-      // efecto item flotante
+      alfajor.play('alfajor_brillo');
       this.tweens.add({
         targets: alfajor,
         y: alfajor.y - 5,
@@ -146,14 +147,13 @@ export default class Game extends Phaser.Scene {
       });
     });
 
-    // recoger alfajores
     this.physics.add.overlap(this.jugador, this.alfajores, (jugador, alfajor) => {
       alfajor.destroy();
       this.alfajoresRecolectados++;
       this.textoAlfajores.setText(`x${this.alfajoresRecolectados}`);
     });
 
-    // texto contador alfajores (reemplazado con bitmapText)
+    // texto alfajores
     this.alfajorIcono = this.add.sprite(20, 18, 'alfajor_animado')
       .setOrigin(0, 0.5)
       .setScale(1)
@@ -164,12 +164,12 @@ export default class Game extends Phaser.Scene {
       .setScrollFactor(0)
       .setOrigin(0);
 
-    // texto del tiempo jugado (reemplazado con bitmapText)
+    // texto tiempo
     this.textoTiempo = this.add.bitmapText(230, 15, "PublicPixel", 'Time: 0s', 8)
       .setScrollFactor(0)
       .setOrigin(0);
 
-    // temporizador de juego (suma 1 segundo por segundo)
+    // temporizador
     this.time.addEvent({
       delay: 1000,
       loop: true,
@@ -177,6 +177,14 @@ export default class Game extends Phaser.Scene {
         this.tiempoJugado++;
         this.textoTiempo.setText(`Time: ${this.tiempoJugado}s`);
       }
+    });
+
+    // colisión con obstáculos (pierde)
+    this.physics.add.collider(this.jugador, capaObstaculos, () => {
+      this.scene.start('GameOver', {
+        tiempoFinal: this.tiempoJugado,
+        alfajores: this.alfajoresRecolectados
+      });
     });
   }
 
@@ -189,7 +197,7 @@ export default class Game extends Phaser.Scene {
 
     if (this.jugador.body.blocked.down) {
       if (this.jugador.anims.currentAnim && this.jugador.anims.currentAnim.key !== 'carpincho_avanza') {
-        this.jugador.setFrame(5); // aterriza
+        this.jugador.setFrame(5);
         this.time.delayedCall(100, () => {
           this.jugador.play('carpincho_avanza');
         });
@@ -204,14 +212,13 @@ export default class Game extends Phaser.Scene {
     }
 
     if (!this.jugador.body.blocked.down && this.jugador.body.velocity.y > 0) {
-      this.jugador.setFrame(4); // caída
+      this.jugador.setFrame(4);
     }
 
-    // si el jugador se cae de la plataforma
     if (this.jugador.y > this.map.heightInPixels + 100) {
       this.scene.start('GameOver', {
-      tiempoFinal: this.tiempoJugado,
-      alfajores: this.alfajoresRecolectados
+        tiempoFinal: this.tiempoJugado,
+        alfajores: this.alfajoresRecolectados
       });
     }
   }
