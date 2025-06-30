@@ -37,12 +37,12 @@ export default class GameOver extends Phaser.Scene {
     this.nubes2B = this.add.image(this.nubes2A.width, -5, "nubes2").setOrigin(0);
 
     // Título
-    this.add.bitmapText(160, 90, "PublicPixel", '¡PERDISTE!', 16)
-      .setTint(0xff0000)
+    this.add.bitmapText(155, 90, "PublicPixel", 'PERDISTE', 16)
+      .setTint(0xff99ff)
       .setOrigin(0.5);
 
     // Tiempo final
-    this.add.bitmapText(150, 120, "PublicPixel", `Tiempo: ${this.tiempoFinal}s`, 8)
+    this.add.bitmapText(155, 120, "PublicPixel", `Tiempo: ${this.tiempoFinal}s`, 8)
       .setOrigin(0.5);
 
     // Ícono del alfajor recolectado
@@ -54,12 +54,21 @@ export default class GameOver extends Phaser.Scene {
 
     // Cantidad de alfajores
     this.textoAlfajores = this.add.bitmapText(160, 140, "PublicPixel", `x${this.alfajoresRecolectados}`, 8)
-      .setOrigin(0, 0.5)
-      .setTint(0xffffff);
+      .setOrigin(0, 0.5);
 
-    // Instrucciones
-    this.add.bitmapText(160, 170, "PublicPixel", 'R: reiniciar  ESC: menú', 8)
-      .setOrigin(0.5);
+    this.add.bitmapText(120, 170, "PublicPixel", 'R:', 8)
+    .setOrigin(0.5)
+    .setTint(0xa000a0);
+    
+    this.add.bitmapText(170, 170, "PublicPixel", 'reiniciar', 8)
+    .setOrigin(0.5);
+
+    this.add.bitmapText(127, 190, "PublicPixel", 'ESC:', 8)
+    .setOrigin(0.5)
+    .setTint(0xa000a0);
+
+    this.add.bitmapText(165, 190, "PublicPixel", 'menu', 8)
+    .setOrigin(0.5);
 
     // Reiniciar juego
     this.input.keyboard.once('keydown-R', () => {

@@ -125,7 +125,7 @@ export default class Game extends Phaser.Scene {
     // ---------------------------
     if (!this.registry.get('tutorialVisto')) {
       // sprite animado de la barra espaciadora (fixed en pantalla)
-      this.indicacionSalto = this.add.sprite(60, 100, 'spacebar')
+      this.indicacionSalto = this.add.sprite(80, 100, 'spacebar')
         .setScrollFactor(0)
         .setDepth(10)
         .setAlpha(0.8)
