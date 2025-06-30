@@ -60,13 +60,32 @@ export default class GameOver extends Phaser.Scene {
     this.add.bitmapText(160, 170, "PublicPixel", 'R: reiniciar  ESC: menú', 8)
       .setOrigin(0.5);
 
+    // Al presionar R reiniciar el juego, guardando record primero
     this.input.keyboard.once('keydown-R', () => {
+      this.guardarRecord();
       this.scene.start('Game');
     });
 
+    // Al presionar ESC volver al menú, guardando record primero
     this.input.keyboard.once('keydown-ESC', () => {
+      this.guardarRecord();
       this.scene.start('MainMenu');
     });
+  }
+
+  guardarRecord() {
+    const recordGuardado = JSON.parse(localStorage.getItem("record")) || { alfajores: 0, tiempo: 0 };
+
+    // Comparar si se supera en *ambos* valores
+    const superaRecord = this.alfajoresRecolectados > recordGuardado.alfajores ||
+      (this.alfajoresRecolectados === recordGuardado.alfajores && this.tiempoFinal > recordGuardado.tiempo);
+
+    if (superaRecord) {
+      localStorage.setItem("record", JSON.stringify({
+        alfajores: this.alfajoresRecolectados,
+        tiempo: this.tiempoFinal
+      }));
+    }
   }
 
   update() {
