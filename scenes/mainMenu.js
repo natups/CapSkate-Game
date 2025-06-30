@@ -40,6 +40,10 @@ export default class MainMenu extends Phaser.Scene {
     this.nubes2B = this.add.image(this.nubes2A.width, 5, "nubes2").setOrigin(0);
     this.titulo = this.add.image(160, 115, "titulo").setOrigin(0.5);
 
+    /*this.add.bitmapText(30, 140, "PublicPixel", "© 2025 Natasha", 8)
+    .setOrigin(0, 1)
+    .setTint(0xffffff);*/
+
     this.textoStart = this.add.bitmapText(105, 160, "PublicPixel", "> ENTER para jugar", 8)
       .setOrigin(0.5)
       .setTint(0xffffff);
