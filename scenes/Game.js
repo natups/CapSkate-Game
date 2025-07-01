@@ -8,6 +8,10 @@ export default class Game extends Phaser.Scene {
     this.tiempoJugado = 0; // tiempo total en segundos
     this.velocidadBase = 120; // velocidad inicial del jugador
     this.incrementoVelocidad = 10; // cuánto se incrementa cada 10 segundos
+
+    this.replicas = 1; // cuenta cuántas veces se ha replicado el mapa
+
+    this.replicandoMapa = false; // bandera para evitar múltiples clonaciones simultáneas
   }
 
   preload() {
@@ -123,7 +127,7 @@ export default class Game extends Phaser.Scene {
       const trampolin = this.trampolines.create(obj.x, obj.y, 'trampolin');
       trampolin.setOrigin(0, 1).setDepth(1);
       trampolin.body.setSize(32, 8);
-      trampolin.body.setOffset(0, 24);
+      trampolin.body.setOffset(0, 16);
     });
 
     this.physics.add.overlap(this.jugador, this.trampolines, (jugador, trampolin) => {
@@ -194,13 +198,13 @@ export default class Game extends Phaser.Scene {
   }
 
   update() {
-    // Parallax
+    // Parallax del fondo
     const scrollX = Math.floor(this.cameras.main.scrollX);
     this.nubesA.tilePositionX = scrollX * 0.5;
     this.nubes2A.tilePositionX = scrollX * 0.3;
     this.cielo.tilePositionX = scrollX * 0.2;
 
-    // Animación al tocar suelo
+    // Si el jugador está en el suelo, vuelve a caminar
     if (this.jugador.body.blocked.down) {
       if (this.jugador.anims.currentAnim && this.jugador.anims.currentAnim.key !== 'carpincho_avanza') {
         this.jugador.setFrame(5);
@@ -209,12 +213,13 @@ export default class Game extends Phaser.Scene {
       this.saltos = 0;
     }
 
-    // Salto doble
+    // Salto doble con tecla espacio
     if (Phaser.Input.Keyboard.JustDown(this.teclaEspacio) && this.saltos < 2) {
       this.jugador.setVelocityY(-300);
       this.saltos++;
       this.jugador.play('carpincho_salta', true);
 
+      // Elimina la indicación de salto si estaba activa
       if (this.tutorialActivo) {
         this.tutorialActivo = false;
         if (this.indicacionSalto) this.indicacionSalto.destroy();
@@ -222,12 +227,12 @@ export default class Game extends Phaser.Scene {
       }
     }
 
-    // Cambiar sprite si cae
+    // Si está cayendo, muestra frame de caída
     if (!this.jugador.body.blocked.down && this.jugador.body.velocity.y > 0) {
       this.jugador.setFrame(4);
     }
 
-    // ⛔️ NUEVO: si choca lateralmente con una plataforma, termina el juego
+    // Si choca lateralmente y no está en el suelo, termina el juego
     if ((this.jugador.body.blocked.left || this.jugador.body.blocked.right) && !this.jugador.body.blocked.down) {
       this.scene.start('GameOver', {
         tiempoFinal: this.tiempoJugado,
@@ -235,45 +240,69 @@ export default class Game extends Phaser.Scene {
       });
     }
 
-    // Si cae fuera de la pantalla, termina el juego
+    // Si cae fuera del mapa, termina el juego
     if (this.jugador.y > this.map.heightInPixels + 100) {
       this.scene.start('GameOver', { tiempoFinal: this.tiempoJugado, alfajores: this.alfajoresRecolectados });
     }
 
-    // Mapa infinito: replicar elementos
-    if (!this.replicado && this.jugador.x > this.map.widthInPixels - 160) {
-      this.replicado = true;
-      const offsetX = this.map.widthInPixels;
+    // 🧠 MAPA INFINITO: verifica si hay que clonar el mapa antes de que el jugador llegue al final
+    const mapaAncho = this.map.widthInPixels;
+    const margenAnticipacion = 320; // cuando falta este margen, ya clona
 
-      const plataformasClonadas = this.map.createLayer('plataformas', this.map.tilesets[0], offsetX, 0);
-      plataformasClonadas.setCollisionByProperty({ colision: true });
-      this.physics.add.collider(this.jugador, plataformasClonadas);
+    if (!this.replicandoMapa && this.jugador.x > mapaAncho * (this.replicas - 1) + mapaAncho - margenAnticipacion) {
+      this.replicandoMapa = true;
+      this.replicarMapa();
 
-      const obstaculosClonados = this.map.createLayer('obstaculos', this.map.tilesets[1], offsetX, 0);
-
-      this.map.getObjectLayer("trampolines").objects.forEach(obj => {
-        const trampolin = this.trampolines.create(obj.x + offsetX, obj.y, 'trampolin');
-        trampolin.setOrigin(0, 1).setDepth(1);
-        trampolin.body.setSize(32, 8);
-        trampolin.body.setOffset(0, 24);
-      });
-
-      this.map.getObjectLayer("items").objects.forEach(obj => {
-        const alfajor = this.alfajores.create(obj.x + offsetX, obj.y, 'alfajor_animado').setOrigin(0.5, 1);
-        alfajor.play('alfajor_brillo');
-        this.tweens.add({ targets: alfajor, y: alfajor.y - 5, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-      });
-
-      const objetosColision = this.map.getObjectLayer("colisionObj")?.objects;
-      if (objetosColision) {
-        objetosColision.forEach(obj => {
-          const hitbox = this.obstaculosHitbox.create(obj.x + offsetX, obj.y, null)
-            .setOrigin(0).setSize(obj.width, obj.height).setVisible(false);
-        });
-      }
-
-      this.physics.world.setBounds(0, 0, this.map.widthInPixels * 2, this.map.heightInPixels + 200);
-      this.cameras.main.setBounds(0, 0, this.map.widthInPixels * 2, this.map.heightInPixels);
+      // Resetea la bandera luego de un breve tiempo para evitar múltiples llamadas
+      this.time.delayedCall(100, () => { this.replicandoMapa = false; });
     }
+  }
+
+  // Método para clonar el mapa y objetos al final, haciendo el endless runner fluido
+  replicarMapa() {
+    const offsetX = this.map.widthInPixels * this.replicas;
+
+    // Crea un nuevo tilemap desde el JSON original
+    const nuevoTilemap = this.make.tilemap({ key: 'plataformas' });
+
+    // Agrega los tilesets necesarios
+    const nuevoTilesetPlataforma = nuevoTilemap.addTilesetImage('plataformaTierra', 'plataformaTierra');
+    const nuevoTilesetObstaculos = nuevoTilemap.addTilesetImage('obstaculos', 'obstaculos');
+
+    // Crea las capas del nuevo tilemap en la posición offsetX para que queden pegadas al final del mapa anterior
+    const plataformasClonadas = nuevoTilemap.createLayer('plataformas', nuevoTilesetPlataforma, offsetX, 0);
+    plataformasClonadas.setCollisionByProperty({ colision: true });
+    this.physics.add.collider(this.jugador, plataformasClonadas);
+
+    const obstaculosClonados = nuevoTilemap.createLayer('obstaculos', nuevoTilesetObstaculos, offsetX, 0);
+    obstaculosClonados.setCollisionByProperty({ colision: true });
+    this.physics.add.collider(this.jugador, obstaculosClonados);
+
+    // Clona trampolines con offsetX
+    nuevoTilemap.getObjectLayer("trampolines")?.objects.forEach(obj => {
+      const trampolin = this.trampolines.create(obj.x + offsetX, obj.y, 'trampolin');
+      trampolin.setOrigin(0, 1).setDepth(1);
+      trampolin.body.setSize(32, 8);
+      trampolin.body.setOffset(0, 24);
+    });
+
+    // Clona alfajores con offsetX y su animación
+    nuevoTilemap.getObjectLayer("items")?.objects.forEach(obj => {
+      const alfajor = this.alfajores.create(obj.x + offsetX, obj.y, 'alfajor_animado').setOrigin(0.5, 1);
+      alfajor.play('alfajor_brillo');
+      this.tweens.add({ targets: alfajor, y: alfajor.y - 5, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    });
+
+    // Clona hitboxes invisibles de obstáculos con offsetX
+    nuevoTilemap.getObjectLayer("colisionObj")?.objects.forEach(obj => {
+      const hitbox = this.obstaculosHitbox.create(obj.x + offsetX, obj.y, null)
+        .setOrigin(0).setSize(obj.width, obj.height).setVisible(false);
+    });
+
+    // Actualiza los límites del mundo y de la cámara para incluir el nuevo fragmento del mapa
+    this.replicas++;
+    const nuevoAncho = this.map.widthInPixels * this.replicas;
+    this.physics.world.setBounds(0, 0, nuevoAncho, this.map.heightInPixels + 200);
+    this.cameras.main.setBounds(0, 0, nuevoAncho, this.map.heightInPixels);
   }
 }
