@@ -6,6 +6,8 @@ export default class Game extends Phaser.Scene {
   init(data) {
     this.alfajoresRecolectados = 0; // contador
     this.tiempoJugado = 0; // tiempo en segundos
+    this.velocidadBase = 120;
+    this.incrementoVelocidad = 10;
   }
 
   preload() {
@@ -20,7 +22,7 @@ export default class Game extends Phaser.Scene {
 
     // tilesets y mapa
     this.load.image('plataformaTierra', 'public/assets/tilemap/plataformaTierra.png');
-    this.load.image('obstaculos', 'public/assets/tilemap/obstaculos.png'); // tileset obstáculos
+    this.load.image('obstaculos', 'public/assets/tilemap/obstaculos.png');
 
     this.load.tilemapTiledJSON('plataformas', 'public/assets/tilemap/plataformas.json');
 
@@ -34,7 +36,6 @@ export default class Game extends Phaser.Scene {
       frameHeight: 16
     });
 
-    // ui barra espaciadora
     this.load.spritesheet('spacebar', 'public/assets/spaceBar.png', {
       frameWidth: 96,
       frameHeight: 32
@@ -51,24 +52,19 @@ export default class Game extends Phaser.Scene {
       this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST)
     );
 
-    // cargar mapa y tilesets
     this.map = this.make.tilemap({ key: 'plataformas' });
-
     const tilesetPlataforma = this.map.addTilesetImage('plataformaTierra', 'plataformaTierra');
     const tilesetObstaculos = this.map.addTilesetImage('obstaculos', 'obstaculos');
 
-    // capas
     const layer = this.map.createLayer('plataformas', tilesetPlataforma, 0, 0);
     layer.setCollisionByProperty({ colision: true });
 
     const capaObstaculos = this.map.createLayer('obstaculos', tilesetObstaculos, 0, 0);
     capaObstaculos.setCollisionByProperty({ colision: true });
 
-    // ajustar el tamaño del mundo y cámara
     this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels + 200);
     this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
 
-    // animación trampolín
     this.anims.create({
       key: 'trampolin_salto',
       frames: this.anims.generateFrameNumbers('trampolin', { start: 0, end: 5 }),
@@ -76,7 +72,6 @@ export default class Game extends Phaser.Scene {
       repeat: 0
     });
 
-    // animación alfajor
     this.anims.create({
       key: 'alfajor_brillo',
       frames: this.anims.generateFrameNumbers('alfajor_animado', { start: 0, end: 4 }),
@@ -84,7 +79,6 @@ export default class Game extends Phaser.Scene {
       repeat: -1
     });
 
-    // animaciones jugador
     this.anims.create({
       key: 'carpincho_avanza',
       frames: this.anims.generateFrameNumbers('jugador', { start: 0, end: 1 }),
@@ -106,11 +100,10 @@ export default class Game extends Phaser.Scene {
       repeat: -1
     });
 
-    // crear jugador
     const objetoJugador = this.map.getObjectLayer("jugador").objects[0];
     this.jugador = this.physics.add.sprite(objetoJugador.x, objetoJugador.y, 'jugador');
     this.jugador.setOrigin(0.5, 1);
-    this.jugador.setVelocityX(120);
+    this.jugador.setVelocityX(this.velocidadBase);
     this.teclaEspacio = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.jugador.setCollideWorldBounds(true);
     this.jugador.setDepth(2);
@@ -120,11 +113,7 @@ export default class Game extends Phaser.Scene {
     this.jugador.play('carpincho_avanza');
     this.saltos = 0;
 
-    // ---------------------------
-    // MOSTRAR TUTORIAL DE SALTO
-    // ---------------------------
     if (!this.registry.get('tutorialVisto')) {
-      // sprite animado de la barra espaciadora (fixed en pantalla)
       this.indicacionSalto = this.add.sprite(80, 100, 'spacebar')
         .setScrollFactor(0)
         .setDepth(10)
@@ -137,14 +126,8 @@ export default class Game extends Phaser.Scene {
       this.tutorialActivo = false;
     }
 
-    // trampolines
-    this.trampolines = this.physics.add.group({
-      allowGravity: false,
-      immovable: true
-    });
-
-    const objetosTrampolines = this.map.getObjectLayer("trampolines").objects;
-    objetosTrampolines.forEach(obj => {
+    this.trampolines = this.physics.add.group({ allowGravity: false, immovable: true });
+    this.map.getObjectLayer("trampolines").objects.forEach(obj => {
       const trampolin = this.trampolines.create(obj.x, obj.y, 'trampolin');
       trampolin.setOrigin(0, 1);
       trampolin.setDepth(1);
@@ -160,21 +143,11 @@ export default class Game extends Phaser.Scene {
       }
     });
 
-    // alfajores
     this.alfajores = this.physics.add.group({ allowGravity: false });
-
-    const objetosItems = this.map.getObjectLayer("items").objects;
-    objetosItems.forEach(obj => {
+    this.map.getObjectLayer("items").objects.forEach(obj => {
       const alfajor = this.alfajores.create(obj.x, obj.y, 'alfajor_animado').setOrigin(0.5, 1);
       alfajor.play('alfajor_brillo');
-      this.tweens.add({
-        targets: alfajor,
-        y: alfajor.y - 5,
-        duration: 800,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut'
-      });
+      this.tweens.add({ targets: alfajor, y: alfajor.y - 5, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     });
 
     this.physics.add.overlap(this.jugador, this.alfajores, (jugador, alfajor) => {
@@ -183,44 +156,43 @@ export default class Game extends Phaser.Scene {
       this.textoAlfajores.setText(`x${this.alfajoresRecolectados}`);
     });
 
-    // texto alfajores
     this.alfajorIcono = this.add.sprite(20, 18, 'alfajor_animado')
-      .setOrigin(0, 0.5)
-      .setScale(1)
-      .setScrollFactor(0);
+      .setOrigin(0, 0.5).setScale(1).setScrollFactor(0);
     this.alfajorIcono.play('alfajor_brillo');
 
-    this.textoAlfajores = this.add.bitmapText(40, 15, "PublicPixel", 'x0', 8)
-      .setScrollFactor(0)
-      .setOrigin(0);
+    this.textoAlfajores = this.add.bitmapText(40, 15, "PublicPixel", 'x0', 8).setScrollFactor(0).setOrigin(0);
+    this.textoTiempo = this.add.bitmapText(230, 15, "PublicPixel", 'Time: 0s', 8).setScrollFactor(0).setOrigin(0);
 
-    // texto tiempo
-    this.textoTiempo = this.add.bitmapText(230, 15, "PublicPixel", 'Time: 0s', 8)
-      .setScrollFactor(0)
-      .setOrigin(0);
+    this.time.addEvent({ delay: 1000, loop: true, callback: () => {
+      this.tiempoJugado++;
+      this.textoTiempo.setText(`Time: ${this.tiempoJugado}s`);
+    }});
 
-    // temporizador
-    this.time.addEvent({
-      delay: 1000,
-      loop: true,
-      callback: () => {
-        this.tiempoJugado++;
-        this.textoTiempo.setText(`Time: ${this.tiempoJugado}s`);
-      }
-    });
+    this.time.addEvent({ delay: 10000, loop: true, callback: () => {
+      this.velocidadBase += this.incrementoVelocidad;
+      this.jugador.setVelocityX(this.velocidadBase);
+    }});
 
-    // colisión con obstáculos (pierde)
     this.physics.add.collider(this.jugador, capaObstaculos, () => {
-      this.scene.start('GameOver', {
-        tiempoFinal: this.tiempoJugado,
-        alfajores: this.alfajoresRecolectados
-      });
+      this.scene.start('GameOver', { tiempoFinal: this.tiempoJugado, alfajores: this.alfajoresRecolectados });
     });
+
+    // hitboxes pequeñas
+    this.obstaculosHitbox = this.physics.add.staticGroup();
+    const objetosColision = this.map.getObjectLayer("colisionObj")?.objects;
+    if (objetosColision) {
+      objetosColision.forEach(obj => {
+        const hitbox = this.obstaculosHitbox.create(obj.x, obj.y, null).setOrigin(0)
+          .setSize(obj.width, obj.height).setVisible(false);
+      });
+      this.physics.add.overlap(this.jugador, this.obstaculosHitbox, () => {
+        this.scene.start('GameOver', { tiempoFinal: this.tiempoJugado, alfajores: this.alfajoresRecolectados });
+      });
+    }
   }
 
   update() {
     const scrollX = Math.floor(this.cameras.main.scrollX);
-
     this.nubesA.tilePositionX = scrollX * 0.5;
     this.nubes2A.tilePositionX = scrollX * 0.3;
     this.cielo.tilePositionX = scrollX * 0.2;
@@ -228,9 +200,7 @@ export default class Game extends Phaser.Scene {
     if (this.jugador.body.blocked.down) {
       if (this.jugador.anims.currentAnim && this.jugador.anims.currentAnim.key !== 'carpincho_avanza') {
         this.jugador.setFrame(5);
-        this.time.delayedCall(100, () => {
-          this.jugador.play('carpincho_avanza');
-        });
+        this.time.delayedCall(100, () => this.jugador.play('carpincho_avanza'));
       }
       this.saltos = 0;
     }
@@ -242,7 +212,6 @@ export default class Game extends Phaser.Scene {
 
       if (this.tutorialActivo) {
         this.tutorialActivo = false;
-        // destruyo el sprite y texto del tutorial
         if (this.indicacionSalto) this.indicacionSalto.destroy();
         if (this.indicacionTexto) this.indicacionTexto.destroy();
       }
@@ -253,10 +222,44 @@ export default class Game extends Phaser.Scene {
     }
 
     if (this.jugador.y > this.map.heightInPixels + 100) {
-      this.scene.start('GameOver', {
-        tiempoFinal: this.tiempoJugado,
-        alfajores: this.alfajoresRecolectados
+      this.scene.start('GameOver', { tiempoFinal: this.tiempoJugado, alfajores: this.alfajoresRecolectados });
+    }
+
+    // mapa infinito
+    if (!this.replicado && this.jugador.x > this.map.widthInPixels - 160) {
+      this.replicado = true;
+      const offsetX = this.map.widthInPixels;
+
+      const plataformasClonadas = this.map.createLayer('plataformas', this.map.tilesets[0], offsetX, 0);
+      plataformasClonadas.setCollisionByProperty({ colision: true });
+      this.physics.add.collider(this.jugador, plataformasClonadas);
+
+      const obstaculosClonados = this.map.createLayer('obstaculos', this.map.tilesets[1], offsetX, 0);
+
+      this.map.getObjectLayer("trampolines").objects.forEach(obj => {
+        const trampolin = this.trampolines.create(obj.x + offsetX, obj.y, 'trampolin');
+        trampolin.setOrigin(0, 1);
+        trampolin.setDepth(1);
+        trampolin.body.setSize(32, 8);
+        trampolin.body.setOffset(0, 24);
       });
+
+      this.map.getObjectLayer("items").objects.forEach(obj => {
+        const alfajor = this.alfajores.create(obj.x + offsetX, obj.y, 'alfajor_animado').setOrigin(0.5, 1);
+        alfajor.play('alfajor_brillo');
+        this.tweens.add({ targets: alfajor, y: alfajor.y - 5, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      });
+
+      const objetosColision = this.map.getObjectLayer("colisionObj")?.objects;
+      if (objetosColision) {
+        objetosColision.forEach(obj => {
+          const hitbox = this.obstaculosHitbox.create(obj.x + offsetX, obj.y, null)
+            .setOrigin(0).setSize(obj.width, obj.height).setVisible(false);
+        });
+      }
+
+      this.physics.world.setBounds(0, 0, this.map.widthInPixels * 2, this.map.heightInPixels + 200);
+      this.cameras.main.setBounds(0, 0, this.map.widthInPixels * 2, this.map.heightInPixels);
     }
   }
 }
