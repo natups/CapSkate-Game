@@ -33,7 +33,7 @@ export default class MainMenu extends Phaser.Scene {
     this.musica = this.sound.add('musicaMainMenu', { loop: true, volume: 0.4 });
     this.musica.play();
 
-    // pixel-art (sin suavizado)
+    // pixelart (sin suavizado)
     ['cielo', 'nubes', 'nubes2'].forEach(key =>
       this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST)
     );
@@ -45,10 +45,6 @@ export default class MainMenu extends Phaser.Scene {
     this.nubes2A = this.add.image(0, 5, "nubes2").setOrigin(0);
     this.nubes2B = this.add.image(this.nubes2A.width, 5, "nubes2").setOrigin(0);
     this.titulo = this.add.image(160, 115, "titulo").setOrigin(0.5);
-
-    /*this.add.bitmapText(30, 140, "PublicPixel", "© 2025 Natasha", 8)
-    .setOrigin(0, 1)
-    .setTint(0xffffff);*/
 
     this.textoStart = this.add.bitmapText(105, 160, "PublicPixel", "> ENTER para jugar", 8)
       .setOrigin(0.5)
