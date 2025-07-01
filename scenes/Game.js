@@ -4,54 +4,39 @@ export default class Game extends Phaser.Scene {
   }
 
   init(data) {
-    this.alfajoresRecolectados = 0; // contador
-    this.tiempoJugado = 0; // tiempo en segundos
-    this.velocidadBase = 120;
-    this.incrementoVelocidad = 10;
+    this.alfajoresRecolectados = 0; // contador de ítems recolectados
+    this.tiempoJugado = 0; // tiempo total en segundos
+    this.velocidadBase = 120; // velocidad inicial del jugador
+    this.incrementoVelocidad = 10; // cuánto se incrementa cada 10 segundos
   }
 
   preload() {
-    this.load.spritesheet('jugador', 'public/assets/jugador.png', {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-
+    // Carga de sprites y assets
+    this.load.spritesheet('jugador', 'public/assets/jugador.png', { frameWidth: 32, frameHeight: 32 });
     this.load.image('cielo', 'public/assets/cielo.png');
     this.load.image('nubes', 'public/assets/nubes.png');
     this.load.image('nubes2', 'public/assets/nubes2.png');
-
-    // tilesets y mapa
     this.load.image('plataformaTierra', 'public/assets/tilemap/plataformaTierra.png');
     this.load.image('obstaculos', 'public/assets/tilemap/obstaculos.png');
-
     this.load.tilemapTiledJSON('plataformas', 'public/assets/tilemap/plataformas.json');
 
-    this.load.spritesheet('trampolin', 'public/assets/trampolin.png', {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-
-    this.load.spritesheet('alfajor_animado', 'public/assets/alfajorSpriteSheet.png', {
-      frameWidth: 16,
-      frameHeight: 16
-    });
-
-    this.load.spritesheet('spacebar', 'public/assets/spaceBar.png', {
-      frameWidth: 96,
-      frameHeight: 32
-    });
+    this.load.spritesheet('trampolin', 'public/assets/trampolin.png', { frameWidth: 32, frameHeight: 32 });
+    this.load.spritesheet('alfajor_animado', 'public/assets/alfajorSpriteSheet.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('spacebar', 'public/assets/spaceBar.png', { frameWidth: 96, frameHeight: 32 });
   }
 
   create() {
-    // cielo y nubes con parallax
+    // Fondo y nubes con parallax
     this.cielo = this.add.tileSprite(0, 0, 320, 240, 'cielo').setOrigin(0).setScrollFactor(0);
     this.nubesA = this.add.tileSprite(0, -15, 320, 240, 'nubes').setOrigin(0).setScrollFactor(0);
     this.nubes2A = this.add.tileSprite(0, -10, 320, 240, 'nubes2').setOrigin(0).setScrollFactor(0);
 
+    // Filtro pixelado para mantener estilo retro
     ['cielo', 'nubes', 'nubes2'].forEach(key =>
       this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST)
     );
 
+    // Crear mapa y capas de colisión
     this.map = this.make.tilemap({ key: 'plataformas' });
     const tilesetPlataforma = this.map.addTilesetImage('plataformaTierra', 'plataformaTierra');
     const tilesetObstaculos = this.map.addTilesetImage('obstaculos', 'obstaculos');
@@ -65,6 +50,7 @@ export default class Game extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels + 200);
     this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
 
+    // Animaciones
     this.anims.create({
       key: 'trampolin_salto',
       frames: this.anims.generateFrameNumbers('trampolin', { start: 0, end: 5 }),
@@ -100,19 +86,24 @@ export default class Game extends Phaser.Scene {
       repeat: -1
     });
 
+    // Crear jugador desde la capa de objetos
     const objetoJugador = this.map.getObjectLayer("jugador").objects[0];
     this.jugador = this.physics.add.sprite(objetoJugador.x, objetoJugador.y, 'jugador');
     this.jugador.setOrigin(0.5, 1);
     this.jugador.setVelocityX(this.velocidadBase);
-    this.teclaEspacio = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.jugador.setCollideWorldBounds(true);
     this.jugador.setDepth(2);
-    this.physics.add.collider(this.jugador, layer);
-    this.cameras.main.startFollow(this.jugador, true, 1, 1);
-    this.cameras.main.setFollowOffset(-80, 0);
     this.jugador.play('carpincho_avanza');
+
+    this.teclaEspacio = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.saltos = 0;
 
+    this.physics.add.collider(this.jugador, layer);
+
+    this.cameras.main.startFollow(this.jugador, true, 1, 1);
+    this.cameras.main.setFollowOffset(-80, 0);
+
+    // Tutorial visible solo una vez
     if (!this.registry.get('tutorialVisto')) {
       this.indicacionSalto = this.add.sprite(80, 100, 'spacebar')
         .setScrollFactor(0)
@@ -126,11 +117,11 @@ export default class Game extends Phaser.Scene {
       this.tutorialActivo = false;
     }
 
+    // Trampolines
     this.trampolines = this.physics.add.group({ allowGravity: false, immovable: true });
     this.map.getObjectLayer("trampolines").objects.forEach(obj => {
       const trampolin = this.trampolines.create(obj.x, obj.y, 'trampolin');
-      trampolin.setOrigin(0, 1);
-      trampolin.setDepth(1);
+      trampolin.setOrigin(0, 1).setDepth(1);
       trampolin.body.setSize(32, 8);
       trampolin.body.setOffset(0, 24);
     });
@@ -143,6 +134,7 @@ export default class Game extends Phaser.Scene {
       }
     });
 
+    // Alfajores
     this.alfajores = this.physics.add.group({ allowGravity: false });
     this.map.getObjectLayer("items").objects.forEach(obj => {
       const alfajor = this.alfajores.create(obj.x, obj.y, 'alfajor_animado').setOrigin(0.5, 1);
@@ -156,28 +148,37 @@ export default class Game extends Phaser.Scene {
       this.textoAlfajores.setText(`x${this.alfajoresRecolectados}`);
     });
 
-    this.alfajorIcono = this.add.sprite(20, 18, 'alfajor_animado')
-      .setOrigin(0, 0.5).setScale(1).setScrollFactor(0);
+    // HUD
+    this.alfajorIcono = this.add.sprite(20, 18, 'alfajor_animado').setOrigin(0, 0.5).setScrollFactor(0);
     this.alfajorIcono.play('alfajor_brillo');
 
-    this.textoAlfajores = this.add.bitmapText(40, 15, "PublicPixel", 'x0', 8).setScrollFactor(0).setOrigin(0);
-    this.textoTiempo = this.add.bitmapText(230, 15, "PublicPixel", 'Time: 0s', 8).setScrollFactor(0).setOrigin(0);
+    this.textoAlfajores = this.add.bitmapText(40, 15, "PublicPixel", 'x0', 8).setScrollFactor(0);
+    this.textoTiempo = this.add.bitmapText(230, 15, "PublicPixel", 'Time: 0s', 8).setScrollFactor(0);
 
-    this.time.addEvent({ delay: 1000, loop: true, callback: () => {
-      this.tiempoJugado++;
-      this.textoTiempo.setText(`Time: ${this.tiempoJugado}s`);
-    }});
+    // Temporizador de tiempo jugado
+    this.time.addEvent({
+      delay: 1000, loop: true,
+      callback: () => {
+        this.tiempoJugado++;
+        this.textoTiempo.setText(`Time: ${this.tiempoJugado}s`);
+      }
+    });
 
-    this.time.addEvent({ delay: 10000, loop: true, callback: () => {
-      this.velocidadBase += this.incrementoVelocidad;
-      this.jugador.setVelocityX(this.velocidadBase);
-    }});
+    // Aumentar velocidad cada 10 segundos
+    this.time.addEvent({
+      delay: 10000, loop: true,
+      callback: () => {
+        this.velocidadBase += this.incrementoVelocidad;
+        this.jugador.setVelocityX(this.velocidadBase);
+      }
+    });
 
+    // Colisión con obstáculos termina el juego
     this.physics.add.collider(this.jugador, capaObstaculos, () => {
       this.scene.start('GameOver', { tiempoFinal: this.tiempoJugado, alfajores: this.alfajoresRecolectados });
     });
 
-    // hitboxes pequeñas
+    // Obstáculos invisibles de precisión
     this.obstaculosHitbox = this.physics.add.staticGroup();
     const objetosColision = this.map.getObjectLayer("colisionObj")?.objects;
     if (objetosColision) {
@@ -185,6 +186,7 @@ export default class Game extends Phaser.Scene {
         const hitbox = this.obstaculosHitbox.create(obj.x, obj.y, null).setOrigin(0)
           .setSize(obj.width, obj.height).setVisible(false);
       });
+
       this.physics.add.overlap(this.jugador, this.obstaculosHitbox, () => {
         this.scene.start('GameOver', { tiempoFinal: this.tiempoJugado, alfajores: this.alfajoresRecolectados });
       });
@@ -192,11 +194,13 @@ export default class Game extends Phaser.Scene {
   }
 
   update() {
+    // Parallax
     const scrollX = Math.floor(this.cameras.main.scrollX);
     this.nubesA.tilePositionX = scrollX * 0.5;
     this.nubes2A.tilePositionX = scrollX * 0.3;
     this.cielo.tilePositionX = scrollX * 0.2;
 
+    // Animación al tocar suelo
     if (this.jugador.body.blocked.down) {
       if (this.jugador.anims.currentAnim && this.jugador.anims.currentAnim.key !== 'carpincho_avanza') {
         this.jugador.setFrame(5);
@@ -205,6 +209,7 @@ export default class Game extends Phaser.Scene {
       this.saltos = 0;
     }
 
+    // Salto doble
     if (Phaser.Input.Keyboard.JustDown(this.teclaEspacio) && this.saltos < 2) {
       this.jugador.setVelocityY(-300);
       this.saltos++;
@@ -217,15 +222,25 @@ export default class Game extends Phaser.Scene {
       }
     }
 
+    // Cambiar sprite si cae
     if (!this.jugador.body.blocked.down && this.jugador.body.velocity.y > 0) {
       this.jugador.setFrame(4);
     }
 
+    // ⛔️ NUEVO: si choca lateralmente con una plataforma, termina el juego
+    if ((this.jugador.body.blocked.left || this.jugador.body.blocked.right) && !this.jugador.body.blocked.down) {
+      this.scene.start('GameOver', {
+        tiempoFinal: this.tiempoJugado,
+        alfajores: this.alfajoresRecolectados
+      });
+    }
+
+    // Si cae fuera de la pantalla, termina el juego
     if (this.jugador.y > this.map.heightInPixels + 100) {
       this.scene.start('GameOver', { tiempoFinal: this.tiempoJugado, alfajores: this.alfajoresRecolectados });
     }
 
-    // mapa infinito
+    // Mapa infinito: replicar elementos
     if (!this.replicado && this.jugador.x > this.map.widthInPixels - 160) {
       this.replicado = true;
       const offsetX = this.map.widthInPixels;
@@ -238,8 +253,7 @@ export default class Game extends Phaser.Scene {
 
       this.map.getObjectLayer("trampolines").objects.forEach(obj => {
         const trampolin = this.trampolines.create(obj.x + offsetX, obj.y, 'trampolin');
-        trampolin.setOrigin(0, 1);
-        trampolin.setDepth(1);
+        trampolin.setOrigin(0, 1).setDepth(1);
         trampolin.body.setSize(32, 8);
         trampolin.body.setOffset(0, 24);
       });
