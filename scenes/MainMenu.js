@@ -24,9 +24,15 @@ export default class MainMenu extends Phaser.Scene {
       frameWidth: 16,
       frameHeight: 16
     });
+
+    this.load.audio('musicaMainMenu', 'public/assets/audio/Rolemusic-TheWhiteKitty.mp3');
   }
 
   create() {
+    // Reproducir música de fondo
+    this.musica = this.sound.add('musicaMainMenu', { loop: true, volume: 0.4 });
+    this.musica.play();
+
     // pixel-art (sin suavizado)
     ['cielo', 'nubes', 'nubes2'].forEach(key =>
       this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST)
@@ -87,6 +93,7 @@ export default class MainMenu extends Phaser.Scene {
     this.enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
     this.enterKey.on("down", () => {
       this.scene.start("Game");
+      this.musica.stop();
     });
   }
 

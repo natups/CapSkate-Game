@@ -12,6 +12,7 @@ export default class Game extends Phaser.Scene {
     this.replicas = 1; // cuenta cuántas veces se ha replicado el mapa
 
     this.replicandoMapa = false; // bandera para evitar múltiples clonaciones simultáneas
+
   }
 
   preload() {
@@ -27,9 +28,16 @@ export default class Game extends Phaser.Scene {
     this.load.spritesheet('trampolin', 'public/assets/trampolin.png', { frameWidth: 32, frameHeight: 32 });
     this.load.spritesheet('alfajor_animado', 'public/assets/alfajorSpriteSheet.png', { frameWidth: 16, frameHeight: 16 });
     this.load.spritesheet('spacebar', 'public/assets/spaceBar.png', { frameWidth: 96, frameHeight: 32 });
+
+    // Música para el juego
+    this.load.audio('musicaJuego', 'public/assets/audio/Rolemusic-TheWhite.mp3');
   }
 
   create() {
+    // Reproducir música de fondo
+    this.musica = this.sound.add('musicaJuego', { loop: true, volume: 0.4 });
+    this.musica.play();
+
     // Fondo y nubes con parallax
     this.cielo = this.add.tileSprite(0, 0, 320, 240, 'cielo').setOrigin(0).setScrollFactor(0);
     this.nubesA = this.add.tileSprite(0, -15, 320, 240, 'nubes').setOrigin(0).setScrollFactor(0);
@@ -180,6 +188,7 @@ export default class Game extends Phaser.Scene {
     // Colisión con obstáculos termina el juego
     this.physics.add.collider(this.jugador, capaObstaculos, () => {
       this.scene.start('GameOver', { tiempoFinal: this.tiempoJugado, alfajores: this.alfajoresRecolectados });
+      this.musica.stop();
     });
 
     // Obstáculos invisibles de precisión
@@ -193,6 +202,7 @@ export default class Game extends Phaser.Scene {
 
       this.physics.add.overlap(this.jugador, this.obstaculosHitbox, () => {
         this.scene.start('GameOver', { tiempoFinal: this.tiempoJugado, alfajores: this.alfajoresRecolectados });
+        this.musica.stop();
       });
     }
   }
@@ -238,14 +248,16 @@ export default class Game extends Phaser.Scene {
         tiempoFinal: this.tiempoJugado,
         alfajores: this.alfajoresRecolectados
       });
+      this.musica.stop();
     }
 
     // Si cae fuera del mapa, termina el juego
     if (this.jugador.y > this.map.heightInPixels + 100) {
       this.scene.start('GameOver', { tiempoFinal: this.tiempoJugado, alfajores: this.alfajoresRecolectados });
+      this.musica.stop();
     }
 
-    // 🧠 MAPA INFINITO: verifica si hay que clonar el mapa antes de que el jugador llegue al final
+    // MAPA INFINITO: verifica si hay que clonar el mapa antes de que el jugador llegue al final
     const mapaAncho = this.map.widthInPixels;
     const margenAnticipacion = 320; // cuando falta este margen, ya clona
 

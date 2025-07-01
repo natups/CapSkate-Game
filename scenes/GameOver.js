@@ -18,9 +18,16 @@ export default class GameOver extends Phaser.Scene {
       "public/assets/fonts/PublicPixel.png",
       "public/assets/fonts/PublicPixel.fnt"
     );
+
+    this.load.audio('musicaGameOver', 'public/assets/audio/Komiku-Skate.mp3');
   }
 
   create() {
+    // musica
+    this.musica = this.sound.add('musicaGameOver', { loop: true, volume: 0.5 });
+    this.musica.play();
+
+
     // Filtro pixel perfect para las imágenes cargadas
     ['cielo', 'nubes', 'nubes2'].forEach(key =>
       this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST)
@@ -74,12 +81,14 @@ export default class GameOver extends Phaser.Scene {
     this.input.keyboard.once('keydown-R', () => {
       this.guardarRecord();
       this.scene.start('Game');
+      this.musica.stop();
     });
 
     // Volver al menú
     this.input.keyboard.once('keydown-ESC', () => {
       this.guardarRecord();
       this.scene.start('MainMenu');
+      this.musica.stop();
     });
   }
 
